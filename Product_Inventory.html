@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INVENTORY</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='product_inventory.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .btn-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+        }
+
+        .search-container {
+            transition: margin 0.3s ease;
+        }
+
+        /* SHIFT CLASSES */
+        .shifted-left { margin-left: 200px; }
+        .shifted-right { margin-right: 25%; } /* matches order panel width */
+        .shifted-left-time, .shifted-right-time { transition: margin 0.3s ease; }
+
+        /* PRODUCT DISPLAY */
+        .product-display {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            padding: 10px;
+            transition: margin 0.3s ease;
+        }
+
+        .product-display.shifted-right {
+            margin-right: 25%;
+        }
+
+        .product-card {
+            background: white;
+            text-align: center;
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transition: transform 0.2s ease;
+        }
+
+        .product-card:hover { transform: translateY(-5px); cursor: pointer; }
+
+        .product-card img {
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .product-name { font-weight: bold; font-size: 16px; margin-top: 8px; }
+        .product-price { color: green; font-size: 15px; margin-top: 5px; }
+       
+         .order-number {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e74c3c;
+            background: #fdf2f2;
+            border: none;
+        }
+   
+    </style>
+</head>
+<body>
+
+            <!-- SIDEBAR -->
+    <div id="sidebar" class="sidebar">
+            <div class="p-3">
+                <h5>{{ user.personal_name }}</h5>
+                <p>{{ user.job_desc }}</p>
+            </div>
+            <ul class="list-unstyled ps-3">
+                <li>
+                    <a href="{{ url_for('dashboard') }}">Point_of_sales</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('activity_billing_queue') }}">Activity</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('audit_logs') }}">Audit logs</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('product_inventory') }}">Inventory</a>
+                </li>
+                <li><a href="#">Teams</a></li>
+                <li><a href="#">Settings</a></li>
+            </ul>
+    </div>
+
+    <!-- ORDER PANEL -->
+    <div id="orderContainer" class="order-container">
+        
+    </div>
+
+    <!-- TOP BAR -->
+    <div class="top-bar d-flex align-items-center">
+        <div id="menuToggle" class="menu-icon">&#9776;</div>
+        <div class="date-box ms-3 top-bar-item">
+           <button class="icon-button">
+                <img src="{{ url_for('static', filename='images/calendar_icon.jpg') }}" 
+                    alt="date_icon" 
+                    class="icon-img">
+           </button>
+          <span id="dateText">--/--/----</span>
+        </div>
+
+        <div class="time-box ms-3 top-bar-item">
+            <button class="icon-button">
+                <img src="{{ url_for('static', filename='images/clock_icon.jpg') }}" 
+                    alt="date_icon" 
+                    class="icon-img">
+           </button>
+            <span id="timeText">--:--:--</span>
+        </div>
+        <div id="orderToggle" class="ms-auto open-order top-bar-item">Open Order</div>
+    </div>
+
+     <!-- BUTTON CONTAINER AS HORIZONTAL NAV -->
+    <div id="buttonsContainer" class="buttons-container">
+       <button class="dashboard-btn1">Stock Take</button>
+	   <button class="dashboard-btn2">Add Product Inventory</button> 
+	   <button class="dashboard-btn3">status checker</button>
+	   <button class="dashboard-btn4">Product_Editor</button>
+    </div>
+
+    <!-- SEARCH BAR -->
+    <div id="searchContainer" class="search-container mt-3">
+        <div class="input-group">
+            <input type="text" id="searchInput" placeholder="Search for something sweet on your mind" class="form-control">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+        </div>
+    </div>
+    
+        <!-- BIG DISPLAY SCREEN -->
+    <div id="bigDisplay" class="big-display">
+        <!-- content goes here -->
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+    // DATE & TIME
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('dateText').textContent = now.toLocaleDateString();
+            document.getElementById('timeText').textContent = now.toLocaleTimeString();
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // ELEMENTS
+        const orderToggle = document.getElementById('orderToggle');
+        const sidebar = document.getElementById('sidebar');
+        const orderContainer = document.getElementById('orderContainer');
+        const menuToggle = document.getElementById('menuToggle');
+        const buttonsContainer = document.getElementById('buttonsContainer');
+        const searchContainer = document.getElementById('searchContainer');
+        const productDisplay = document.querySelector('.product-display');
+        const buttons = document.querySelectorAll('.dashboard-btn');
+        const topBarItems = document.querySelectorAll('.top-bar-item');
+        let tempOrderItems = [];
+
+        // SHIFT FUNCTION
+        function shiftUI(shiftSidebar, shiftOrder) {
+            if (shiftSidebar) {
+                buttonsContainer.classList.add('shifted-left');
+                searchContainer.classList.add('shifted-left');
+                topBarItems.forEach(el => el.classList.add('shifted-left-time'));
+            } else {
+                buttonsContainer.classList.remove('shifted-left');
+                searchContainer.classList.remove('shifted-left');
+                topBarItems.forEach(el => el.classList.remove('shifted-left-time'));
+            }
+
+            if (shiftOrder) {
+                buttonsContainer.classList.add('shifted-right');
+                searchContainer.classList.add('shifted-right');
+                productDisplay.classList.add('shifted-right');
+                topBarItems.forEach(el => el.classList.add('shifted-right-time'));
+            } else {
+                buttonsContainer.classList.remove('shifted-right');
+                searchContainer.classList.remove('shifted-right');
+                productDisplay.classList.remove('shifted-right');
+                topBarItems.forEach(el => el.classList.remove('shifted-right-time'));
+            }
+
+            if (shiftSidebar || shiftOrder) {
+                buttons.forEach(btn => btn.style.flex = '0 1 auto');
+            } else {
+                buttons.forEach(btn => btn.style.flex = '1');
+            }
+        }
+
+        // SIDEBAR TOGGLE
+        menuToggle.addEventListener('click', function() {
+            orderContainer.classList.remove("active"); 
+            orderToggle.textContent = "Open Order";
+            orderToggle.classList.remove("close-order");
+            orderToggle.classList.add("open-order");
+
+            sidebar.classList.toggle('active');
+            shiftUI(sidebar.classList.contains('active'), false);
+        });
+    
+        // ORDER TOGGLE
+        orderToggle.addEventListener('click', () => {
+            if (orderToggle.textContent === "Open Order") {
+                orderContainer.classList.add("active");
+                orderToggle.textContent = "Close Order";
+                orderToggle.classList.remove("open-order");
+                orderToggle.classList.add("close-order");
+
+                sidebar.classList.remove('active');
+                shiftUI(false, true);
+            } else {
+                orderContainer.classList.remove("active");
+                orderToggle.textContent = "Open Order";
+                orderToggle.classList.remove("close-order");
+                orderToggle.classList.add("open-order");
+
+                shiftUI(false, false);
+
+               
+        // ===== RESET DISPLAY SCREEN 1 =====
+        orderItems.innerHTML = "";  // clears all selected products
+
+        // ===== RESET TEMP JSON =====
+        tempOrderItems = [];
+
+        // ===== RESET SUBTOTAL =====
+        document.querySelector('.subtotal-amount').textContent = '$0.00';
+            }
+        });
+
+        // CLOSE SIDEBAR ON CLICK
+        sidebar.addEventListener('click', function () {
+            sidebar.classList.remove('active');
+            shiftUI(false, false);
+        });
+
+        function loadProductCategories() {
+            fetch('/get_product_categories')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch categories");
+                    }
+                    return response.json();
+                })
+                .then(categories => {
+
+                    const select = document.getElementById('productCategorySelect');
+
+                    if (!select) {
+                        console.error("Dropdown not found in DOM");
+                        return;
+                    }
+
+                    select.innerHTML = ''; // Clear loading option
+
+                    categories.forEach(category => {
+                        const option = document.createElement('option');
+
+                        option.value = category.product_category_number; // stores number
+                        option.textContent = category.product_category_name; // shows name
+
+                        select.appendChild(option);
+                    });
+
+                })
+                .catch(error => {
+                    console.error("Error loading categories:", error);
+                });
+        }
+
+        // Track button click state
+        let stockTakeClickCount = 0;
+
+        document.querySelector('.dashboard-btn1').addEventListener('click', () => {
+            const bigDisplay = document.getElementById('bigDisplay');
+            stockTakeClickCount++;
+
+            // Triple-click: remove table
+            if (stockTakeClickCount === 3) {
+                bigDisplay.innerHTML = '';
+                bigDisplay.style.display = 'none';
+                stockTakeClickCount = 0; // reset counter
+                return;
+            }
+
+            // First or second click: show or rebuild table
+            bigDisplay.innerHTML = ''; // clear previous table
+            bigDisplay.style.display = 'block';
+
+            const table = document.createElement('table');
+            table.classList.add('table', 'table-bordered');
+            table.style.width = '100%';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Products Image</th>
+                        <th>Product Name</th>
+                        <th>Product Price</th>
+                        <th>Product Category</th>
+                        <th>Product initial Inventory</th>
+                        <th>Number of times units sold</th>
+                        <th>Product current qty</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryBody"></tbody>
+            `;
+            bigDisplay.appendChild(table);
+
+            // ==== Safe JSON conversion ====
+            const productsData = JSON.parse('{{ products|tojson|safe }}');
+            const tbody = document.getElementById('inventoryBody');
+
+            productsData.forEach(p => {
+                const tr = document.createElement('tr');
+
+                // Column 1: Image
+                const tdImage = document.createElement('td');
+                const img = document.createElement('img');
+                img.src = `/static/${p.image_path.replace(/\\/g,'/').split('static/')[1]}`;
+                img.alt = p.good_name;
+                img.width = 130;
+                img.height = 130;
+                img.style.objectFit = 'cover';
+                tdImage.appendChild(img);
+                tr.appendChild(tdImage);
+
+                // Column 2: Name
+                const tdName = document.createElement('td');
+                tdName.textContent = p.good_name;
+                tr.appendChild(tdName);
+
+                // Column 3: Price
+                const tdPrice = document.createElement('td');
+                tdPrice.textContent = p.price;
+                tr.appendChild(tdPrice);
+
+                // Column 4: Category
+                const tdCategory = document.createElement('td');
+                tdCategory.textContent = p.product_category || 'Uncategorized';
+                tr.appendChild(tdCategory);
+
+                // Column 5: Product initial Inventory
+                const tdInventory = document.createElement('td');
+                tdInventory.textContent = p.initial_inventory;
+                tr.appendChild(tdInventory);
+
+                // Column 6: Number of units sold
+                const tdUnitsSold = document.createElement('td');
+                tdUnitsSold.textContent = p.number_of_units_sold !== undefined ? p.number_of_units_sold : 0;
+                tr.appendChild(tdUnitsSold);
+
+                // Column 7: Current quantity
+                const tdCurrentQty = document.createElement('td');
+                tdCurrentQty.textContent = p.current_quantity !== undefined ? p.current_quantity : p.initial_inventory;
+                tr.appendChild(tdCurrentQty);
+
+                tbody.appendChild(tr);
+            });
+        });
+            
+        document.querySelector('.dashboard-btn3').addEventListener('click', () => {
+
+                const bigDisplay = document.getElementById('bigDisplay');
+                bigDisplay.innerHTML = '';
+                bigDisplay.style.display = 'block';
+
+                const table = document.createElement('table');
+                table.classList.add('table', 'table-bordered');
+                table.style.width = '100%';
+
+                table.innerHTML = `
+                    <thead style="background-color:#007bff; color:white;">
+                        <tr>
+                            <th>Product Image</th>
+                            <th>Product Name</th>
+                            <th>Current QTY</th>
+                            <th>Inventory Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="statusCheckerBody"></tbody>
+                `;
+
+                bigDisplay.appendChild(table);
+
+                // Get products from Flask
+                const productsData = JSON.parse('{{ products|tojson|safe }}');
+                const tbody = document.getElementById('statusCheckerBody');
+
+                function getInventoryStatus(qty) {
+                    qty = Number(qty); // FORCE number conversion
+
+                    if (qty > 70) return 'IN_STOCK';
+                    if (qty > 40) return 'MID_STOCK';
+                    if (qty > 20) return 'LOW_STOCK';
+                    if (qty > 0) return 'APPROACHING_LOW';
+                    return 'OUT_OF_STOCK';
+                }
+
+                productsData.forEach(p => {
+
+                    const tr = document.createElement('tr');
+
+                    // Product Image
+                    const tdImage = document.createElement('td');
+                    const img = document.createElement('img');
+
+                    if (p.image_path) {
+                        img.src = `/static/${p.image_path.replace(/\\/g, '/').split('static/').pop()}`;
+                    } else {
+                        img.src = '/static/default.png';
+                    }
+
+                    img.alt = p.good_name;
+                    img.width = 120;
+                    img.height = 120;
+                    img.style.objectFit = 'cover';
+
+                    tdImage.appendChild(img);
+                    tr.appendChild(tdImage);
+
+                    // Product Name
+                    const tdName = document.createElement('td');
+                    tdName.textContent = p.good_name;
+                    tr.appendChild(tdName);
+
+                    // Quantity
+                    const tdQty = document.createElement('td');
+                    tdQty.textContent = p.current_quantity;
+                    tr.appendChild(tdQty);
+
+                    // Inventory Status (THIS WAS THE PROBLEM AREA)
+                    const tdStatus = document.createElement('td');
+                    tdStatus.textContent = getInventoryStatus(p.current_quantity);
+                    tr.appendChild(tdStatus);
+
+                    tbody.appendChild(tr);
+                });
+
+            });
+
+            // Product Editor Button
+        let productEditorClickCount = 0;
+
+        document.querySelector('.dashboard-btn4').addEventListener('click', () => {
+            const bigDisplay = document.getElementById('bigDisplay');
+            productEditorClickCount++;
+
+            // Double-click: clear
+            if (productEditorClickCount === 2) {
+                bigDisplay.innerHTML = '';
+                bigDisplay.style.display = 'none';
+                productEditorClickCount = 0; // reset counter
+                return;
+            }
+
+            bigDisplay.innerHTML = '';
+            bigDisplay.style.display = 'block';
+
+                // inside your btn4 click event (keep all existing JS logic)
+            const table = document.createElement('table');
+            table.classList.add('table');  
+            table.id = 'productEditorTable';  // IMPORTANT: links to CSS
+            table.style.width = '100%';
+
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Product Price</th>
+                        <th>Product Image</th>
+                        <th>Product Description</th>
+                        <th>Product Category</th>
+                        <th>Initial Quantity</th>
+                        <th>Current Quantity</th>
+                        <th>Quantity Status</th>
+                        <th>Edit</th>
+                        <th>Save</th>
+                    </tr>
+                </thead>
+                <tbody id="productEditorBody"></tbody>
+        `;
+        bigDisplay.appendChild(table);
+
+        
+            // ===== LOAD PRODUCTS =====
+            const productsData = JSON.parse('{{ products|tojson|safe }}');
+            const tbody = document.getElementById('productEditorBody');
+
+            function getInventoryStatus(qty) {
+                qty = Number(qty) || 0;
+                if (qty > 70) return 'IN_STOCK';
+                if (qty > 40) return 'MID_STOCK';
+                if (qty > 20) return 'LOW_STOCK';
+                if (qty > 0) return 'APPROACHING_LOW';
+                return 'OUT_OF_STOCK';
+            }
+
+            productsData.forEach(p => {
+                const tr = document.createElement('tr');
+
+                // Product Name
+                const tdName = document.createElement('td');
+                tdName.textContent = p.good_name || '';
+                tr.appendChild(tdName);
+
+                // Price
+                const tdPrice = document.createElement('td');
+                tdPrice.textContent = p.price || 0;
+                tr.appendChild(tdPrice);
+
+                // Image
+                const tdImage = document.createElement('td');
+                const img = document.createElement('img');
+                img.src = p.image_path 
+                    ? `/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}`
+                    : '/static/default.png';
+                img.width = 120;
+                img.height = 120;
+                img.style.objectFit = 'cover';
+                tdImage.appendChild(img);
+                tr.appendChild(tdImage);
+
+                // Description
+                const tdDesc = document.createElement('td');
+                tdDesc.textContent = p.description || '';
+                tr.appendChild(tdDesc);
+
+                // Category
+                const tdCat = document.createElement('td');
+                tdCat.textContent = p.product_category || 'Uncategorized';
+                tr.appendChild(tdCat);
+
+                // Initial Quantity
+                const tdInitQty = document.createElement('td');
+                tdInitQty.textContent = p.initial_inventory || 0;
+                tr.appendChild(tdInitQty);
+
+                // Current Quantity
+                const tdCurQty = document.createElement('td');
+                tdCurQty.textContent = p.current_quantity || 0;
+                tr.appendChild(tdCurQty);
+
+                // Quantity Status
+                const tdStatus = document.createElement('td');
+                tdStatus.textContent = getInventoryStatus(p.current_quantity);
+                tr.appendChild(tdStatus);
+
+                // Edit Button
+                const tdEdit = document.createElement('td');
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn btn-warning btn-sm';
+                editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+                tdEdit.appendChild(editBtn);
+                tr.appendChild(tdEdit);
+
+                // Save Button
+                const tdSave = document.createElement('td');
+                const saveBtn = document.createElement('button');
+                saveBtn.className = 'btn btn-success btn-sm';
+                saveBtn.textContent = 'SAVE';
+                tdSave.appendChild(saveBtn);
+                tr.appendChild(tdSave);
+
+                // ===== EDIT FUNCTION =====
+                editBtn.addEventListener('click', () => {
+                    tdName.innerHTML = `<input class="form-control" value="${tdName.textContent}">`;
+                    tdPrice.innerHTML = `<input type="number" class="form-control" value="${tdPrice.textContent}">`;
+                    tdDesc.innerHTML = `<input class="form-control" value="${tdDesc.textContent}">`;
+                    tdCurQty.innerHTML = `<input type="number" class="form-control" value="${tdCurQty.textContent}">`;
+                });
+
+                // ===== SAVE FUNCTION =====
+                saveBtn.addEventListener('click', () => {
+                    tdName.textContent = tdName.querySelector('input')?.value || tdName.textContent;
+                    tdPrice.textContent = tdPrice.querySelector('input')?.value || tdPrice.textContent;
+                    tdDesc.textContent = tdDesc.querySelector('input')?.value || tdDesc.textContent;
+                    tdCurQty.textContent = tdCurQty.querySelector('input')?.value || tdCurQty.textContent;
+                    tdStatus.textContent = getInventoryStatus(tdCurQty.textContent);
+
+                    console.log('Updated product:', {
+                        good_number: p.good_number,
+                        name: tdName.textContent,
+                        price: tdPrice.textContent,
+                        description: tdDesc.textContent,
+                        current_quantity: tdCurQty.textContent
+                    });
+                });
+
+                tbody.appendChild(tr);
+            });
+        });
+
+        // Reset counter outside click event
+        let addInventoryClickCount = 0;
+
+         document.querySelector('.dashboard-btn2').addEventListener('click', () => {
+                const bigDisplay = document.getElementById('bigDisplay');
+
+                // Increment counter
+                addInventoryClickCount++;
+
+                // Triple-click hides everything
+                if (addInventoryClickCount === 3) {
+                    bigDisplay.innerHTML = '';
+                    bigDisplay.style.display = 'none';
+                    addInventoryClickCount = 0;
+                    return;
+                }
+
+                // Show Add Inventory tables
+                bigDisplay.innerHTML = `
+                <div id="addInventoryWrapper">
+
+                    <table id="productsInputTable">
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                <th>Product Price</th>
+                                <th>Product Image</th>
+                                <th>Product Description</th>
+                                <th>Product Category</th>
+                                <th>Product Quantity</th>
+                                <th>Product Save</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><textarea id="productNameInput" class="form-control" placeholder="Enter name"></textarea></td>
+                                <td><textarea id="productPriceInput" class="form-control" placeholder="Enter price"></textarea></td>
+                                <td><textarea id="productImageInput" class="form-control" placeholder="Enter image path"></textarea></td>
+                                <td><textarea id="productDescriptionInput" class="form-control" placeholder="Enter description"></textarea></td>
+                                <td>
+                                    <select id="productCategoryInput" class="form-control">
+                                        <option value="">Loading categories...</option>
+                                    </select>
+                                </td>
+                                <td><textarea id="productQuantityInput" class="form-control" placeholder="Enter quantity"></textarea></td>
+                                <td><button id="PRODUCT_SAVE_BTN" class="PRODUCT_SAVE_BTN">SAVE</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table id="categoryInputTable">
+                        <thead>
+                            <tr>
+                                <th>Category Name</th>
+                                <th>Category Save</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><textarea id="categoryNameInput" class="form-control" placeholder="Enter category"></textarea></td>
+                                <td><button id="CATEGORY_SAVE_BTN" class="CATEGORY_SAVE_BTN">SAVE</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+                `;
+
+                bigDisplay.style.display = 'block';
+
+                // Fetch categories from Flask route and populate select
+                fetch('/get_product_categories')
+                    .then(response => response.json())
+                    .then(data => {
+                        const categorySelect = document.getElementById('productCategoryInput');
+                        categorySelect.innerHTML = ''; // Clear placeholder
+
+                        data.forEach(cat => {
+                            const option = document.createElement('option');
+                            option.value = cat.product_category_number; // number as value
+                            option.textContent = cat.product_category_name; // name shown
+                            categorySelect.appendChild(option);
+                        });
+                    })
+                    .catch(err => {
+                        console.error('Error loading categories:', err);
+                        const categorySelect = document.getElementById('productCategoryInput');
+                        categorySelect.innerHTML = '<option value="">Failed to load categories</option>';
+                    });
+
+                // PRODUCT SAVE BUTTON
+                const saveBtn = document.getElementById('PRODUCT_SAVE_BTN');
+                saveBtn.addEventListener('click', async () => {
+                    const row = saveBtn.closest('tr'); // grab the row of the button
+
+                    const productName = row.querySelector('#productNameInput').value;
+                    const productPrice = row.querySelector('#productPriceInput').value;
+                    const productImage = row.querySelector('#productImageInput').value;
+                    const productDescription = row.querySelector('#productDescriptionInput').value;
+
+                    const categorySelect = row.querySelector('#productCategoryInput');
+                    const categoryNumber = categorySelect.value;
+                    const categoryName = categorySelect.options[categorySelect.selectedIndex].text;
+
+                    const productQuantity = row.querySelector('#productQuantityInput').value;
+
+                    // Show alert with all info
+                    alert(
+                        `Product name: ${productName}\n` +
+                        `Product price: ${productPrice}\n` +
+                        `Product image: ${productImage}\n` +
+                        `Product description: ${productDescription}\n` +
+                        `Product category number: ${categoryNumber}\n` +
+                        `Product category name: ${categoryName}\n` +
+                        `Product quantity: ${productQuantity}`
+                    );
+
+                     // Send data to Flask
+                    const response = await fetch('/Add_Product_Inventory', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            Product_name: productName,
+                            Product_price: productPrice,
+                            Product_image: productImage,
+                            Product_Description: productDescription,
+                            Product_category_number: categoryNumber,
+                            Product_category_name: categoryName,
+                            Product_Quantity: productQuantity
+                        })
+                    });
+
+                    // Clear the row for new data
+                    row.querySelectorAll('textarea').forEach(t => t.value = '');
+                    categorySelect.selectedIndex = 0; // reset select
+                });
+
+                // CATEGORY SAVE BUTTON
+                const saveBtn1 = document.getElementById('CATEGORY_SAVE_BTN');
+                saveBtn1.addEventListener('click', () => {
+                    const row = saveBtn1.closest('tr'); // grab the row of the button
+                    const categoryName = row.querySelector('#categoryNameInput').value;
+
+                    // Alert same style
+                    alert(
+                        `Category name: ${categoryName}`
+                    );
+
+                    // Clear row
+                    row.querySelectorAll('textarea').forEach(t => t.value = '');
+                });
+            });
+
+    </script>
+
+</body>
+</html>
