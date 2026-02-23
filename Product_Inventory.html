@@ -719,20 +719,31 @@
                         `Product quantity: ${productQuantity}`
                     );
 
-                     // Send data to Flask
+                    
+                    // Collect values from inputs
+
+
+                    // Send data to Flask
                     const response = await fetch('/Add_Product_Inventory', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            Product_name: productName,
-                            Product_price: productPrice,
-                            Product_image: productImage,
-                            Product_Description: productDescription,
-                            Product_category_number: categoryNumber,
-                            Product_category_name: categoryName,
-                            Product_Quantity: productQuantity
+                            product_name: productName,
+                            product_price: productPrice,
+                            product_image: productImage,
+                            product_description: productDescription,
+                            product_category_number: categoryNumber,
+                            product_category_name: categoryName,
+                            product_quantity: productQuantity
                         })
                     });
+
+                    const result = await response.json();
+                    if(result.success){
+                        alert(`Product added successfully!\nProduct Number: ${result.product_number}\nProduct Name: ${result.product_name}`);
+                    } else {
+                        alert(`Error: ${result.error}`);
+                    }
 
                     // Clear the row for new data
                     row.querySelectorAll('textarea').forEach(t => t.value = '');
@@ -741,18 +752,43 @@
 
                 // CATEGORY SAVE BUTTON
                 const saveBtn1 = document.getElementById('CATEGORY_SAVE_BTN');
-                saveBtn1.addEventListener('click', () => {
+                 saveBtn1.addEventListener('click', async () => {
                     const row = saveBtn1.closest('tr'); // grab the row of the button
-                    const categoryName = row.querySelector('#categoryNameInput').value;
 
-                    // Alert same style
-                    alert(
-                        `Category name: ${categoryName}`
+                    const categoryNameInput = row.querySelector('#categoryNameInput').value;
+                    
+
+                     alert(
+                        
+                        `categoryNameInput: ${categoryNameInput}`
                     );
 
-                    // Clear row
+                    
+                    // Collect values from inputs
+
+
+                    // Send data to Flask
+                    const response = await fetch('/Add_Product_Category', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          
+                            categoryNameInput: categoryNameInput
+                        })
+                    });
+
+                    const result = await response.json();
+                    if(result.success){
+                        alert(`category added successfully!\nCategory name: ${result.categoryNameInput}`);
+                    } else {
+                        alert(`Error: ${result.error}`);
+                    }
+
+                    // Clear the row for new data
                     row.querySelectorAll('textarea').forEach(t => t.value = '');
+                    categorySelect.selectedIndex = 0; // reset select
                 });
+
             });
 
     </script>

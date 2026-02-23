@@ -59,7 +59,7 @@ def get_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',
-        password='1234',
+        password='',
         database='bakery_busness'
     )
 
@@ -1345,6 +1345,181 @@ def place_order_table():
         # this updates order_history.json
 
         return jsonify({"success": True, "order_id": order_id})
+
+    except Exception as e:
+        print("Database Error:", e)
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/Add_Product_Inventory', methods=['POST'])
+def add_product_inventory():
+    if 'user_id' not in session:
+        return jsonify({"success": False, "error": "User not logged in"})
+
+    data = request.get_json()
+    product_name = data.get('product_name')
+    product_price = data.get('product_price')
+    product_image = data.get('product_image')
+    product_description = data.get('product_description')
+    product_category_number = data.get('product_category_number')
+    product_category_name = data.get('product_category_name')
+    product_quantity = data.get('product_quantity')
+
+    # Validate required fields
+    if not  product_name:
+        return jsonify({"success": False, "error": "Missing product name"})
+
+    user_id = session['user_id']
+    user_name = session['user_name']
+    personal_name = session['personal_name']
+    job_desc = session['job_desc']
+
+    now = datetime.now()
+    current_date = now.date()
+    current_time = now.time()
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # 1️⃣ Insert into products
+        cursor.execute("""
+            INSERT INTO products (good_name, price, image_path, description)
+            VALUES (%s, %s, %s, %s)
+        """, (product_name, product_price, product_image, product_description))
+        good_number = cursor.lastrowid
+
+        # 2️⃣ Insert into products_category_table
+        cursor.execute("""
+            INSERT INTO products_category_table (product_number, product_category_number)
+            VALUES (%s, %s)
+        """, (good_number, product_category_number))
+
+        # 3️⃣ Insert into product_stock_initial
+        cursor.execute("""
+            INSERT INTO product_stock_initial (good_number, initial_quantity, created_at)
+            VALUES (%s, %s, %s)
+        """, (good_number, product_quantity, current_date))
+
+        # 🔐 Audit log
+        cursor.execute(
+            "SELECT description_audit_id FROM Description_audit WHERE Description_Title = %s",
+            ("ITEM",)
+        )
+        desc = cursor.fetchone()
+        if desc:
+            description_audit_id = desc['description_audit_id']
+            audit_now = datetime.now()
+            audit_date = audit_now.date()
+            audit_time = audit_now.time().replace(microsecond=0)
+
+            # Insert temporary audit log
+            cursor.execute("""
+                INSERT INTO Audit_Logs (audit_reference_number, action, audit_date, audit_time, done_by)
+                VALUES (%s, %s, %s, %s, %s)
+            """, ("TEMP", "", audit_date, audit_time, f"{user_id}---{personal_name}---{user_name}"))
+            conn.commit()
+            audit_ID = cursor.lastrowid
+
+            audit_reference_number = f"#{audit_ID}.{user_id}.{description_audit_id}"
+            action_text = (
+                f"ITEM #{good_number} added by {user_name} ({job_desc}). "
+                f"Category: {product_category_name}, "
+                f"Product Initial Quantity: {product_quantity}, "
+                f"Item price: {product_price}"
+            )
+
+            cursor.execute("""
+                UPDATE Audit_Logs
+                SET audit_reference_number=%s, action=%s
+                WHERE audit_ID=%s
+            """, (audit_reference_number, action_text, audit_ID))
+
+            cursor.execute("""
+                INSERT INTO audit_desc (audit_ID, description_audit_id)
+                VALUES (%s, %s)
+            """, (audit_ID, description_audit_id))
+            conn.commit()
+
+        # Commit all inserts
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({"success": True, "product_number": good_number, "product_name": product_name})
+
+    except Exception as e:
+        print("Database Error:", e)
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/Add_Product_Category', methods=['POST'])
+def Add_Product_Category():
+    if 'user_id' not in session:
+        return jsonify({"success": False, "error": "User not logged in"})
+
+    data = request.get_json()
+    category_name = data.get('category_name')  # Make sure JS sends 'category_name'
+
+    # Validate required field
+    if not category_name:
+        return jsonify({"success": False, "error": "Missing category name"})
+
+    user_id = session['user_id']
+    user_name = session['user_name']
+    personal_name = session['personal_name']
+    job_desc = session['job_desc']
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # 1️⃣ Insert into product_categories
+        cursor.execute(
+            "INSERT INTO product_categories (product_category_name) VALUES (%s)",
+            (category_name,)  # Note the comma for a single-element tuple
+        )
+        product_category_number = cursor.lastrowid
+
+        # 🔐 Audit log
+        cursor.execute(
+            "SELECT description_audit_id FROM Description_audit WHERE Description_Title = %s",
+            ("ITEM",)
+        )
+        desc = cursor.fetchone()
+
+        if desc:
+            description_audit_id = desc['description_audit_id']
+            audit_now = datetime.now()
+            audit_date = audit_now.date()
+            audit_time = audit_now.time().replace(microsecond=0)
+
+            # Insert temporary audit log
+            cursor.execute(
+                "INSERT INTO Audit_Logs (audit_reference_number, action, audit_date, audit_time, done_by) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                ("TEMP", "", audit_date, audit_time, f"{user_id}---{personal_name}---{user_name}")
+            )
+            conn.commit()
+
+            audit_ID = cursor.lastrowid
+            audit_reference_number = f"#{audit_ID}.{user_id}.{description_audit_id}"
+            action_text = f"Category {product_category_number} '{category_name}' added by {user_name} ({job_desc})"
+
+            cursor.execute(
+                "UPDATE Audit_Logs SET audit_reference_number=%s, action=%s WHERE audit_ID=%s",
+                (audit_reference_number, action_text, audit_ID)
+            )
+            cursor.execute(
+                "INSERT INTO audit_desc (audit_ID, description_audit_id) VALUES (%s, %s)",
+                (audit_ID, description_audit_id)
+            )
+            conn.commit()
+
+        # Commit all inserts
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({"success": True, "product_category_number": product_category_number, "product_category_name": category_name})
 
     except Exception as e:
         print("Database Error:", e)
