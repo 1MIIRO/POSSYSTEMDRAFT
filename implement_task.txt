@@ -1,0 +1,315 @@
+products
++-------------+---------------+------+-----+---------+----------------+
+| Field       | Type          | Null | Key | Default | Extra          |
++-------------+---------------+------+-----+---------+----------------+
+| good_number | int           | NO   | PRI | NULL    | auto_increment |
+| good_name   | varchar(255)  | NO   |     | NULL    |                |
+| price       | decimal(10,2) | NO   |     | NULL    |                |
+| image_path  | varchar(500)  | YES  |     | NULL    |                |
+| description | text          | YES  |     | NULL    |                |
++-------------+---------------+------+-----+---------+----------------+
+
+
+product_categories
++-------------------------+--------------+------+-----+---------+----------------+
+| Field                   | Type         | Null | Key | Default | Extra          |
++-------------------------+--------------+------+-----+---------+----------------+
+| product_category_number | int          | NO   | PRI | NULL    | auto_increment |
+| product_category_name   | varchar(255) | NO   |     | NULL    |                |
++-------------------------+--------------+------+-----+---------+----------------+
+
+describe products_category_table;
++-------------------------+------+------+-----+---------+-------+
+| Field                   | Type | Null | Key | Default | Extra |
++-------------------------+------+------+-----+---------+-------+
+| product_number          | int  | NO   | MUL | NULL    |       |
+| product_category_number | int  | NO   | MUL | NULL    |       |
++-------------------------+------+------+-----+---------+-------+
+2 rows in set (0.01 sec)
+
+product_stock_initial;
++--------------------------+-----------+------+-----+-------------------+-------------------+
+| Field                    | Type      | Null | Key | Default           | Extra             |
++--------------------------+-----------+------+-----+-------------------+-------------------+
+| product_stock_initial_id | int       | NO   | PRI | NULL              | auto_increment    |
+| good_number              | int       | NO   | MUL | NULL              |                   |
+| initial_quantity         | int       | NO   |     | NULL              |                   |
+| created_at               | timestamp | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++--------------------------+-----------+------+-----+-------------------+-------------------+
+4 rows in set (0.01 sec)
+
+Product_sold 
++---------------+-----------+------+-----+-------------------+-------------------+
+| Field         | Type      | Null | Key | Default           | Extra             |
++---------------+-----------+------+-----+-------------------+-------------------+
+| sold_id       | int       | NO   | PRI | NULL              | auto_increment    |
+| good_number   | int       | NO   | MUL | NULL              |                   |
+| quantity_sold | int       | NO   |     | NULL              |                   |
+| sold_at       | timestamp | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++---------------+-----------+------+-----+-------------------+-------------------+
+4 rows in set (0.00 sec)
+
+product_quantity_current;
++------------------+-----------+------+-----+-------------------+-----------------------------------------------+
+| Field            | Type      | Null | Key | Default           | Extra                                         |
++------------------+-----------+------+-----+-------------------+-----------------------------------------------+
+| good_number      | int       | NO   | PRI | NULL              |                                               |
+| current_quantity | int       | NO   |     | NULL              |                                               |
+| updated_at       | timestamp | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |
++------------------+-----------+------+-----+-------------------+-----------------------------------------------+
+3 rows in set (0.00 sec)
+
+
+product_category_quantites;
++-------------------------------+------+------+-----+---------+----------------+
+| Field                         | Type | Null | Key | Default | Extra          |
++-------------------------------+------+------+-----+---------+----------------+
+| product_category_quantites_id | int  | NO   | PRI | NULL    | auto_increment |
+| product_category_number       | int  | NO   | MUL | NULL    |                |
+| product_categories_quantities | int  | NO   |     | NULL    |                |
++-------------------------------+------+------+-----+---------+----------------+
+3 rows in set (0.00 sec)
+
+const response = await fetch('/Add_Product_Inventory', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            Product_name: productName,
+                            Product_price: productPrice,
+                            Product_image: productImage,
+                            Product_Description: productDescription,
+                            Product_category_number: categoryNumber,
+                            Product_category_name: categoryName,
+                            Product_Quantity: productQuantity
+                        })
+                    });
+
+/Add_Product_Inventory
+def Add_Product_Inventory_to_database():
+    if 'user_id' not in session:
+        return jsonify({"success": False, "error": "User not logged in"})
+
+    data = request.get_json()
+    Product_name = data.get('productName')        
+    Product_price = data.get('productPrice')
+    Product_image = data.get('productImage')
+    Product_Description = data.get('productDescription')
+    Product_category_number = data.get('categoryNumber')
+    Product_category_name =  data.get('categoryName')
+   
+    # Validate required fields
+    if not  Product_name:
+        return jsonify({"success": False, "error": "Missing required fields"})
+
+    user_id = session['user_id']
+    user_name= session['user_name']
+    personal_name= session['personal_name']
+    job_desc= session['job_desc']
+
+    now = datetime.now()
+    current_date = now.date()
+    current_time = now.time()
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # 1️⃣ Insert into products
+       
+        cursor.execute("""
+            INSERT INTO products (
+                good_name,
+                price,
+                image_path,
+                description
+            ) VALUES (%s, %s, %s, %s)
+        """, (
+            good_name,
+            price,
+            image_path,
+            description
+        ))
+
+        # Get the primary key of the new product
+         good_number = cursor.lastrowid
+		  
+		  # 1️⃣ Insert into products_category_table 
+		 cursor.execute("""
+            INSERT INTO products_category_table (order_ID, order_categories_ID)
+            VALUES (%s, %s)
+        """, (order_id, order_categories_ID))
+        
+
+                   
+        # 3️⃣ Insert into order_with_categories
+        cursor.execute("""
+            INSERT INTO order_with_categories (order_ID, order_categories_ID)
+            VALUES (%s, %s)
+        """, (order_id, order_categories_ID))
+
+         # 4️⃣ Insert into customer_order
+        cursor.execute("""
+            INSERT INTO customer_order (order_ID, customer_name,Table_db_id)
+            VALUES (%s, %s, %s)
+        """, (order_id, customer_name,table_id))
+
+
+        order_type_val = data.get('order_type')
+
+        for item in order_items:
+            good_name = item['good_name']
+            quantity = item['quantity']
+            price_at_order = item['price_at_order']  # already price * quantity
+
+            # Get product number
+            cursor.execute("SELECT good_number FROM products WHERE good_name = %s", (good_name,))
+            product_row = cursor.fetchone()
+            if not product_row:
+                continue  # skip missing products
+
+            good_number = product_row['good_number']
+
+            # Optional: validate category exists
+            cursor.execute("""
+                SELECT order_categories_ID 
+                FROM order_categories 
+                WHERE order_categories_name = %s
+            """, (order_type_val,))
+            category_row = cursor.fetchone()
+            if not category_row:
+                raise ValueError(f"Invalid order category selected: {order_type_val}")
+
+            # Insert into order_detials
+            cursor.execute("""
+                INSERT INTO order_detials 
+                (order_refrence_number, product_purchased, item_quantities, order_detials, Total)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (order_id, good_number, quantity, order_type_val, price_at_order))
+            
+        cursor.execute("""
+            INSERT INTO order_with_state 
+            (order_ID, order_status_id, LAST_UPDATE)
+            VALUES (%s, %s, %s)
+            """, (order_id, 1, now))
+        
+        # 🔐 AUDIT LOG FOR ORDER PLACEMENT
+
+        # Get description_audit_id for ORDER
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT description_audit_id FROM Description_audit WHERE Description_Title = %s",
+            ("ORDER",)
+        )
+        desc = cursor.fetchone()
+
+        if desc:
+            description_audit_id = desc['description_audit_id']
+
+            audit_now = datetime.now()
+            audit_date = audit_now.date()
+            audit_time = audit_now.time().replace(microsecond=0)
+
+            # Insert temporary audit log
+            cursor.execute("""
+                INSERT INTO Audit_Logs (
+                    audit_reference_number,
+                    action,
+                    audit_date,
+                    audit_time,
+                    done_by
+                )
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                "TEMP",
+                "",
+                audit_date,
+                audit_time,
+                f"{user_id}---{personal_name}---{user_name}"
+            ))
+            conn.commit()
+
+            audit_ID = cursor.lastrowid
+
+            # Generate reference number
+            audit_reference_number = f"#{audit_ID}.{user_id}.{description_audit_id}"
+
+            action_text = (
+                f"Order #{order_number} placed by {user_name} ({job_desc}). "
+                f"Customer: {customer_name}, "
+                f"Order Type: {order_type_val}, "
+                f"Items Count: {unique_goods_count}, "
+                f"Total Amount: {total_amount:.2f}, "
+                f"Table ID: {table_id}"
+            )
+
+            # Update audit log
+            cursor.execute("""
+                UPDATE Audit_Logs
+                SET audit_reference_number=%s,
+                    action=%s
+                WHERE audit_ID=%s
+            """, (audit_reference_number, action_text, audit_ID))
+
+            # Link audit to description
+            cursor.execute("""
+                INSERT INTO audit_desc (audit_ID, description_audit_id)
+                VALUES (%s, %s)
+            """, (audit_ID, description_audit_id))
+
+            conn.commit()
+
+        # Commit all inserts
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        # ✅ Generate a new order number for the next order
+        # this updates order_history.json
+
+        return jsonify({"success": True, "order_id": order_id})
+
+    except Exception as e:
+        print("Database Error:", e)
+        return jsonify({"success": False, "error": str(e)})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+INSERT INTO products( good_number ,good_name ,price ,image_path ,description )
+   Product_name: productName,
+   Product_price: productPrice,
+   Product_image: productImage,
+   Product_Description: productDescription,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
