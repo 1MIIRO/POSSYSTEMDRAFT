@@ -452,7 +452,7 @@
 
             // Product Editor Button
         let productEditorClickCount = 0;
-
+        
         document.querySelector('.dashboard-btn4').addEventListener('click', () => {
             const bigDisplay = document.getElementById('bigDisplay');
             productEditorClickCount++;
@@ -461,17 +461,16 @@
             if (productEditorClickCount === 2) {
                 bigDisplay.innerHTML = '';
                 bigDisplay.style.display = 'none';
-                productEditorClickCount = 0; // reset counter
+                productEditorClickCount = 0;
                 return;
             }
 
             bigDisplay.innerHTML = '';
             bigDisplay.style.display = 'block';
 
-                // inside your btn4 click event (keep all existing JS logic)
             const table = document.createElement('table');
             table.classList.add('table');  
-            table.id = 'productEditorTable';  // IMPORTANT: links to CSS
+            table.id = 'productEditorTable';
             table.style.width = '100%';
 
             table.innerHTML = `
@@ -487,14 +486,13 @@
                         <th>Quantity Status</th>
                         <th>Edit</th>
                         <th>Save</th>
+                        <th>DELETE</th>
                     </tr>
                 </thead>
                 <tbody id="productEditorBody"></tbody>
-        `;
-        bigDisplay.appendChild(table);
+            `;
+            bigDisplay.appendChild(table);
 
-        
-            // ===== LOAD PRODUCTS =====
             const productsData = JSON.parse('{{ products|tojson|safe }}');
             const tbody = document.getElementById('productEditorBody');
 
@@ -510,22 +508,27 @@
             productsData.forEach(p => {
                 const tr = document.createElement('tr');
 
-                // Product Name
+                // Product Name (non-editable)
                 const tdName = document.createElement('td');
+                tdName.id = 'Product_dashboard_btn4_name';  // <-- added ID
                 tdName.textContent = p.good_name || '';
+                tdName.style.backgroundColor = '#f0f0f0'; // light gray to indicate non-editable
                 tr.appendChild(tdName);
 
                 // Price
                 const tdPrice = document.createElement('td');
+                tdPrice.id = 'Product_dashboard_btn4_price';  // <-- Added ID
                 tdPrice.textContent = p.price || 0;
                 tr.appendChild(tdPrice);
 
                 // Image
                 const tdImage = document.createElement('td');
+                tdImage.id = 'Product_dashboard_btn4_image';
                 const img = document.createElement('img');
-                img.src = p.image_path 
+                const imagePath = p.image_path 
                     ? `/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}`
                     : '/static/default.png';
+                img.src = imagePath;
                 img.width = 120;
                 img.height = 120;
                 img.style.objectFit = 'cover';
@@ -534,33 +537,41 @@
 
                 // Description
                 const tdDesc = document.createElement('td');
+                tdDesc.id = 'Product_dashboard_btn4_description';
                 tdDesc.textContent = p.description || '';
                 tr.appendChild(tdDesc);
 
                 // Category
                 const tdCat = document.createElement('td');
+                tdCat.id = 'Product_dashboard_btn4_category';
                 tdCat.textContent = p.product_category || 'Uncategorized';
                 tr.appendChild(tdCat);
 
                 // Initial Quantity
                 const tdInitQty = document.createElement('td');
+                tdInitQty.id = 'Product_dashboard_btn4_initial_quantity';
                 tdInitQty.textContent = p.initial_inventory || 0;
                 tr.appendChild(tdInitQty);
 
-                // Current Quantity
+                // Current Quantity (non-editable, auto-calculated)
                 const tdCurQty = document.createElement('td');
-                tdCurQty.textContent = p.current_quantity || 0;
+                const initialQty = Number(p.initial_inventory) || 0;
+                const unitsSold = Number(p.number_of_units_sold) || 0;
+                const currentQty = initialQty - unitsSold;
+                tdCurQty.textContent = currentQty;
+                tdCurQty.style.backgroundColor = '#f0f0f0'; // non-editable
                 tr.appendChild(tdCurQty);
 
                 // Quantity Status
                 const tdStatus = document.createElement('td');
-                tdStatus.textContent = getInventoryStatus(p.current_quantity);
+                tdStatus.textContent = getInventoryStatus(currentQty);
                 tr.appendChild(tdStatus);
 
                 // Edit Button
                 const tdEdit = document.createElement('td');
                 const editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-warning btn-sm';
+                editBtn.className = 'dashboard_btn4_edit_btn';
+                editBtn.id = 'dashboard_btn4_edit_btn';
                 editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
                 tdEdit.appendChild(editBtn);
                 tr.appendChild(tdEdit);
@@ -573,20 +584,113 @@
                 tdSave.appendChild(saveBtn);
                 tr.appendChild(tdSave);
 
+                // ===== DELETE BUTTON =====
+                const tdDelete = document.createElement('td');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.id = 'Delect_product_editbtn';
+                deleteBtn.className = 'Delect_product_editbtn btn btn-danger btn-sm';
+                deleteBtn.innerHTML = '❌'; // red X
+                deleteBtn.style.fontWeight = 'bold'; // optional
+                tdDelete.appendChild(deleteBtn);
+                tr.appendChild(tdDelete);
+
                 // ===== EDIT FUNCTION =====
                 editBtn.addEventListener('click', () => {
-                    tdName.innerHTML = `<input class="form-control" value="${tdName.textContent}">`;
-                    tdPrice.innerHTML = `<input type="number" class="form-control" value="${tdPrice.textContent}">`;
-                    tdDesc.innerHTML = `<input class="form-control" value="${tdDesc.textContent}">`;
-                    tdCurQty.innerHTML = `<input type="number" class="form-control" value="${tdCurQty.textContent}">`;
+                    const cells = tr.querySelectorAll('td');
+                    const isEditing = tr.dataset.editing === 'true';
+
+                    if (!isEditing) {
+                        tr.dataset.editing = 'true';
+
+                        cells.forEach((cell, index) => {
+                            // Skip non-editable columns: Product Name (0) & Current Quantity (6)
+                            if ([0,6].includes(index)) return;
+
+                            if (index < cells.length - 2) {
+                                cell.dataset.originalValue = cell.textContent;
+
+                                // IMAGE COLUMN (index 2)
+                                if (index === 2) {
+                                    const imgElem = cell.querySelector('img');
+                                    const input = document.createElement('input');
+                                    input.type = 'text';
+                                    input.className = 'form-control';
+                                    input.value = imgElem?.src || '';
+                                    cell.innerHTML = '';
+                                    cell.appendChild(input);
+                                    input.focus();
+                                    return;
+                                }
+
+                                // DESCRIPTION (index 3)
+                                if (index === 3) {
+                                    const textarea = document.createElement('textarea');
+                                    textarea.className = 'form-control';
+                                    textarea.value = cell.textContent;
+                                    cell.innerHTML = '';
+                                    cell.appendChild(textarea);
+                                    textarea.focus();
+                                    return;
+                                }
+
+                                // PRICE, INITIAL QTY (indexes 1,5)
+                                if ([1,5].includes(index)) {
+                                    const input = document.createElement('input');
+                                    input.type = 'number';
+                                    input.className = 'form-control';
+                                    input.value = cell.textContent;
+                                    cell.innerHTML = '';
+                                    cell.appendChild(input);
+                                    input.focus();
+                                    return;
+                                }
+
+                                // ALL OTHER COLUMNS → text input
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.className = 'form-control';
+                                input.value = cell.textContent;
+                                cell.innerHTML = '';
+                                cell.appendChild(input);
+                                input.focus();
+                            }
+                        });
+
+                    } else {
+                        tr.dataset.editing = 'false';
+                        cells.forEach((cell, index) => {
+                            // Skip non-editable columns
+                            if ([0,6].includes(index)) return;
+
+                            if (index < cells.length - 2) {
+                                const input = cell.querySelector('input, textarea');
+
+                                if (index === 2) {
+                                    const newPath = input?.value || cell.dataset.originalValue || '/static/default.png';
+                                    cell.innerHTML = `<img src="${newPath}" width="120" height="120" style="object-fit: cover;">`;
+                                } else {
+                                    cell.textContent = input?.value || cell.dataset.originalValue;
+                                }
+
+                                delete cell.dataset.originalValue;
+                            }
+                        });
+                    }
                 });
 
                 // ===== SAVE FUNCTION =====
                 saveBtn.addEventListener('click', () => {
-                    tdName.textContent = tdName.querySelector('input')?.value || tdName.textContent;
                     tdPrice.textContent = tdPrice.querySelector('input')?.value || tdPrice.textContent;
-                    tdDesc.textContent = tdDesc.querySelector('input')?.value || tdDesc.textContent;
-                    tdCurQty.textContent = tdCurQty.querySelector('input')?.value || tdCurQty.textContent;
+                    tdDesc.textContent = tdDesc.querySelector('input, textarea')?.value || tdDesc.textContent;
+
+                    // Update image if user edited
+                    const imgInput = tdImage.querySelector('input');
+                    if (imgInput) {
+                        const newPath = imgInput.value || tdImage.querySelector('img')?.src || '/static/default.png';
+                        tdImage.innerHTML = `<img src="${newPath}" width="120" height="120" style="object-fit: cover;">`;
+                    }
+
+                    // Recalculate quantity status (current quantity is non-editable)
                     tdStatus.textContent = getInventoryStatus(tdCurQty.textContent);
 
                     console.log('Updated product:', {
@@ -594,6 +698,7 @@
                         name: tdName.textContent,
                         price: tdPrice.textContent,
                         description: tdDesc.textContent,
+                        image_path: tdImage.querySelector('img')?.src,
                         current_quantity: tdCurQty.textContent
                     });
                 });
@@ -601,8 +706,7 @@
                 tbody.appendChild(tr);
             });
         });
-
-        // Reset counter outside click event
+                
         let addInventoryClickCount = 0;
 
          document.querySelector('.dashboard-btn2').addEventListener('click', () => {
@@ -779,7 +883,7 @@
 
                     const result = await response.json();
                     if(result.success){
-                        alert(`category added successfully!\nCategory name: ${result.categoryNameInput}`);
+                       alert(`Category added successfully!\nCategory name: ${result.product_category_name}`);
                     } else {
                         alert(`Error: ${result.error}`);
                     }
