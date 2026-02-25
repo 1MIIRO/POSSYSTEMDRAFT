@@ -59,7 +59,7 @@ def get_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',
-        password='',
+        password='1234',
         database='bakery_busness'
     )
 
@@ -226,7 +226,7 @@ from decimal import Decimal
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "",
+    "password": "1234",
     "database": "bakery_busness"
 }
 
@@ -1009,6 +1009,46 @@ def dashboard():
     order_description = session.get("order_description", "")
     return render_template('dashboard.html', user=user_info, products=products,tables=tables,order_categories=order_categories, product_categories=product_categories,product_category_map=product_category_map,order_description=order_description)
 
+@app.route('/get_original_product_data', methods=['POST'])
+def get_original_product_data():
+
+    data = request.get_json()
+    good_name = data.get('good_name')
+
+    conn = get_connection()   # ← CALL the function
+    cursor = conn.cursor(dictionary=True)
+
+    query = """
+    SELECT 
+        p.good_number,
+        p.good_name,
+        p.price,
+        p.image_path,
+        p.description,
+        pc.product_category_name,
+        psi.initial_quantity
+    FROM products p
+    LEFT JOIN products_category_table pct 
+        ON p.good_number = pct.product_number
+    LEFT JOIN Product_categories pc 
+        ON pct.product_category_number = pc.product_category_number
+    LEFT JOIN product_stock_initial psi 
+        ON p.good_number = psi.good_number
+    WHERE p.good_name = %s
+    LIMIT 1
+    """
+
+    cursor.execute(query, (good_name,))
+    row = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if row:
+        return jsonify(row)
+    else:
+        return jsonify({"error": "Product not found"})
+
 @app.route('/Product_Inventory')
 def product_inventory():
     # Check if user is logged in
@@ -1025,15 +1065,18 @@ def product_inventory():
     # Fetch products from the database
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
+    
     cursor.execute("""
-          SELECT 
+        SELECT 
             MAX(p.image_path) AS image_path,
             MAX(p.good_name) AS good_name,
             MAX(p.price) AS price,
+            MAX(p.description) AS description,
             COALESCE(MAX(c.product_category_name), 'Uncategorized') AS product_category,
             COALESCE(MAX(psi.initial_quantity), 0) AS initial_inventory,
             COALESCE(SUM(ps.quantity_sold), 0) AS number_of_units_sold,
-            COALESCE(MAX(pqc.current_quantity), MAX(psi.initial_quantity)) AS current_quantity
+            -- Calculate current_quantity on the fly
+            COALESCE(MAX(psi.initial_quantity) - COALESCE(SUM(ps.quantity_sold), 0), 0) AS current_quantity
         FROM products p
         LEFT JOIN products_category_table pct
             ON p.good_number = pct.product_number
@@ -1043,12 +1086,10 @@ def product_inventory():
             ON p.good_number = psi.good_number
         LEFT JOIN product_sold ps
             ON p.good_number = ps.good_number
-        LEFT JOIN product_quantity_current pqc
-            ON p.good_number = pqc.good_number
         GROUP BY p.good_number
         ORDER BY p.good_number
-
     """)
+    
     products = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -1457,7 +1498,7 @@ def Add_Product_Category():
         return jsonify({"success": False, "error": "User not logged in"})
 
     data = request.get_json()
-    category_name = data.get('category_name')  # Make sure JS sends 'category_name'
+    category_name = data.get('categoryNameInput')  # Make sure JS sends 'category_name'
 
     # Validate required field
     if not category_name:

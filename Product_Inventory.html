@@ -450,14 +450,14 @@
 
             });
 
-            // Product Editor Button
+                // Track clicks for Product Editor
         let productEditorClickCount = 0;
-        
+
         document.querySelector('.dashboard-btn4').addEventListener('click', () => {
             const bigDisplay = document.getElementById('bigDisplay');
             productEditorClickCount++;
 
-            // Double-click: clear
+            // Double-click: clear display
             if (productEditorClickCount === 2) {
                 bigDisplay.innerHTML = '';
                 bigDisplay.style.display = 'none';
@@ -469,7 +469,7 @@
             bigDisplay.style.display = 'block';
 
             const table = document.createElement('table');
-            table.classList.add('table');  
+            table.classList.add('table');
             table.id = 'productEditorTable';
             table.style.width = '100%';
 
@@ -510,14 +510,14 @@
 
                 // Product Name (non-editable)
                 const tdName = document.createElement('td');
-                tdName.id = 'Product_dashboard_btn4_name';  // <-- added ID
+                tdName.id = 'Product_dashboard_btn4_name';
                 tdName.textContent = p.good_name || '';
-                tdName.style.backgroundColor = '#f0f0f0'; // light gray to indicate non-editable
+                tdName.style.backgroundColor = '#f0f0f0';
                 tr.appendChild(tdName);
 
                 // Price
                 const tdPrice = document.createElement('td');
-                tdPrice.id = 'Product_dashboard_btn4_price';  // <-- Added ID
+                tdPrice.id = 'Product_dashboard_btn4_price';
                 tdPrice.textContent = p.price || 0;
                 tr.appendChild(tdPrice);
 
@@ -525,10 +525,9 @@
                 const tdImage = document.createElement('td');
                 tdImage.id = 'Product_dashboard_btn4_image';
                 const img = document.createElement('img');
-                const imagePath = p.image_path 
+                img.src = p.image_path
                     ? `/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}`
                     : '/static/default.png';
-                img.src = imagePath;
                 img.width = 120;
                 img.height = 120;
                 img.style.objectFit = 'cover';
@@ -553,13 +552,13 @@
                 tdInitQty.textContent = p.initial_inventory || 0;
                 tr.appendChild(tdInitQty);
 
-                // Current Quantity (non-editable, auto-calculated)
+                // Current Quantity (non-editable)
                 const tdCurQty = document.createElement('td');
                 const initialQty = Number(p.initial_inventory) || 0;
                 const unitsSold = Number(p.number_of_units_sold) || 0;
                 const currentQty = initialQty - unitsSold;
                 tdCurQty.textContent = currentQty;
-                tdCurQty.style.backgroundColor = '#f0f0f0'; // non-editable
+                tdCurQty.style.backgroundColor = '#f0f0f0';
                 tr.appendChild(tdCurQty);
 
                 // Quantity Status
@@ -570,7 +569,7 @@
                 // Edit Button
                 const tdEdit = document.createElement('td');
                 const editBtn = document.createElement('button');
-                editBtn.className = 'dashboard_btn4_edit_btn';
+                editBtn.className = 'dashboard_btn4_edit_btn btn btn-warning btn-sm';
                 editBtn.id = 'dashboard_btn4_edit_btn';
                 editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
                 tdEdit.appendChild(editBtn);
@@ -579,18 +578,16 @@
                 // Save Button
                 const tdSave = document.createElement('td');
                 const saveBtn = document.createElement('button');
-                saveBtn.className = 'btn btn-success btn-sm';
+                saveBtn.className = 'dashboard_btn4_save_btn btn btn-success btn-sm';
                 saveBtn.textContent = 'SAVE';
                 tdSave.appendChild(saveBtn);
                 tr.appendChild(tdSave);
 
-                // ===== DELETE BUTTON =====
+                // Delete Button
                 const tdDelete = document.createElement('td');
                 const deleteBtn = document.createElement('button');
-                deleteBtn.id = 'Delect_product_editbtn';
-                deleteBtn.className = 'Delect_product_editbtn btn btn-danger btn-sm';
-                deleteBtn.innerHTML = '❌'; // red X
-                deleteBtn.style.fontWeight = 'bold'; // optional
+                deleteBtn.className = 'dashboard_btn4_delete_btn btn btn-danger btn-sm';
+                deleteBtn.textContent = '❌';
                 tdDelete.appendChild(deleteBtn);
                 tr.appendChild(tdDelete);
 
@@ -603,110 +600,99 @@
                         tr.dataset.editing = 'true';
 
                         cells.forEach((cell, index) => {
-                            // Skip non-editable columns: Product Name (0) & Current Quantity (6)
-                            if ([0,6].includes(index)) return;
+                            // Non-editable columns: Name(0), Current Qty(6), Buttons(Edit 8, Save 9, Delete 10)
+                            if ([0,6,8,9,10].includes(index)) return;
 
-                            if (index < cells.length - 2) {
-                                cell.dataset.originalValue = cell.textContent;
-
-                                // IMAGE COLUMN (index 2)
-                                if (index === 2) {
-                                    const imgElem = cell.querySelector('img');
-                                    const input = document.createElement('input');
-                                    input.type = 'text';
-                                    input.className = 'form-control';
-                                    input.value = imgElem?.src || '';
-                                    cell.innerHTML = '';
-                                    cell.appendChild(input);
-                                    input.focus();
-                                    return;
+                            // Store original value
+                            if (!cell.dataset.originalValue) {
+                                if (index === 2) { // Image
+                                    cell.dataset.originalValue = cell.querySelector('img')?.src || '/static/default.png';
+                                } else {
+                                    cell.dataset.originalValue = cell.textContent;
                                 }
+                            }
 
-                                // DESCRIPTION (index 3)
-                                if (index === 3) {
-                                    const textarea = document.createElement('textarea');
-                                    textarea.className = 'form-control';
-                                    textarea.value = cell.textContent;
-                                    cell.innerHTML = '';
-                                    cell.appendChild(textarea);
-                                    textarea.focus();
-                                    return;
-                                }
-
-                                // PRICE, INITIAL QTY (indexes 1,5)
-                                if ([1,5].includes(index)) {
-                                    const input = document.createElement('input');
-                                    input.type = 'number';
-                                    input.className = 'form-control';
-                                    input.value = cell.textContent;
-                                    cell.innerHTML = '';
-                                    cell.appendChild(input);
-                                    input.focus();
-                                    return;
-                                }
-
-                                // ALL OTHER COLUMNS → text input
+                            // Replace with input
+                            if (index === 2) { // Image
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.className = 'form-control';
+                                input.value = cell.querySelector('img')?.src || cell.dataset.originalValue;
+                                cell.innerHTML = '';
+                                cell.appendChild(input);
+                            } else if (index === 3) { // Description
+                                const textarea = document.createElement('textarea');
+                                textarea.className = 'form-control';
+                                textarea.value = cell.textContent;
+                                cell.innerHTML = '';
+                                cell.appendChild(textarea);
+                            } else { // Price, Category, Initial Qty
                                 const input = document.createElement('input');
                                 input.type = 'text';
                                 input.className = 'form-control';
                                 input.value = cell.textContent;
                                 cell.innerHTML = '';
                                 cell.appendChild(input);
-                                input.focus();
                             }
                         });
-
                     } else {
                         tr.dataset.editing = 'false';
+
                         cells.forEach((cell, index) => {
-                            // Skip non-editable columns
-                            if ([0,6].includes(index)) return;
+                            // Non-editable columns
+                            if ([0,6,8,9,10].includes(index)) return;
 
-                            if (index < cells.length - 2) {
-                                const input = cell.querySelector('input, textarea');
-
-                                if (index === 2) {
-                                    const newPath = input?.value || cell.dataset.originalValue || '/static/default.png';
-                                    cell.innerHTML = `<img src="${newPath}" width="120" height="120" style="object-fit: cover;">`;
-                                } else {
-                                    cell.textContent = input?.value || cell.dataset.originalValue;
-                                }
-
-                                delete cell.dataset.originalValue;
+                            if (index === 2) { // Image
+                                const orig = cell.dataset.originalValue || '/static/default.png';
+                                cell.innerHTML = `<img src="${orig}" width="120" height="120" style="object-fit: cover;">`;
+                            } else {
+                                cell.textContent = cell.dataset.originalValue || cell.textContent;
                             }
+
+                            delete cell.dataset.originalValue;
                         });
                     }
                 });
 
-                // ===== SAVE FUNCTION =====
-                saveBtn.addEventListener('click', () => {
-                    tdPrice.textContent = tdPrice.querySelector('input')?.value || tdPrice.textContent;
-                    tdDesc.textContent = tdDesc.querySelector('input, textarea')?.value || tdDesc.textContent;
+                    saveBtn.addEventListener("click", function () {
 
-                    // Update image if user edited
-                    const imgInput = tdImage.querySelector('input');
-                    if (imgInput) {
-                        const newPath = imgInput.value || tdImage.querySelector('img')?.src || '/static/default.png';
-                        tdImage.innerHTML = `<img src="${newPath}" width="120" height="120" style="object-fit: cover;">`;
-                    }
+                    const productName = tdName.textContent.trim();
 
-                    // Recalculate quantity status (current quantity is non-editable)
-                    tdStatus.textContent = getInventoryStatus(tdCurQty.textContent);
+                    const inputData = {
+                        good_name: tdName.textContent.trim(),
+                        good_price: tdPrice.querySelector('input')?.value || tdPrice.textContent,
+                        good_image: tdImage.querySelector('input')?.value || tdImage.querySelector('img')?.src,
+                        good_description: tdDesc.querySelector('textarea')?.value || tdDesc.textContent,
+                        good_category: tdCat.querySelector('input')?.value || tdCat.textContent,
+                        good_init_qty: tdInitQty.querySelector('input')?.value || tdInitQty.textContent
+                    };
 
-                    console.log('Updated product:', {
-                        good_number: p.good_number,
-                        name: tdName.textContent,
-                        price: tdPrice.textContent,
-                        description: tdDesc.textContent,
-                        image_path: tdImage.querySelector('img')?.src,
-                        current_quantity: tdCurQty.textContent
+                    fetch("/get_original_product_data", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ good_name: productName })
+                    })
+                    .then(response => response.json())
+                    .then(originalData => {
+
+                        alert(
+                            "ORIGINAL DATA:\n" + JSON.stringify(originalData, null, 2) +
+                            "\n\nNEW INPUT DATA:\n" + JSON.stringify(inputData, null, 2)
+                        );
+
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
                     });
+
                 });
 
                 tbody.appendChild(tr);
             });
         });
-                
+        
         let addInventoryClickCount = 0;
 
          document.querySelector('.dashboard-btn2').addEventListener('click', () => {
