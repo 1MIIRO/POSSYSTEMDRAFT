@@ -450,7 +450,7 @@
 
             });
 
-                // Track clicks for Product Editor
+        // Track clicks for Product Editor       
         let productEditorClickCount = 0;
 
         document.querySelector('.dashboard-btn4').addEventListener('click', () => {
@@ -510,20 +510,17 @@
 
                 // Product Name (non-editable)
                 const tdName = document.createElement('td');
-                tdName.id = 'Product_dashboard_btn4_name';
                 tdName.textContent = p.good_name || '';
                 tdName.style.backgroundColor = '#f0f0f0';
                 tr.appendChild(tdName);
 
                 // Price
                 const tdPrice = document.createElement('td');
-                tdPrice.id = 'Product_dashboard_btn4_price';
                 tdPrice.textContent = p.price || 0;
                 tr.appendChild(tdPrice);
 
                 // Image
                 const tdImage = document.createElement('td');
-                tdImage.id = 'Product_dashboard_btn4_image';
                 const img = document.createElement('img');
                 img.src = p.image_path
                     ? `/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}`
@@ -536,19 +533,16 @@
 
                 // Description
                 const tdDesc = document.createElement('td');
-                tdDesc.id = 'Product_dashboard_btn4_description';
                 tdDesc.textContent = p.description || '';
                 tr.appendChild(tdDesc);
 
                 // Category
                 const tdCat = document.createElement('td');
-                tdCat.id = 'Product_dashboard_btn4_category';
                 tdCat.textContent = p.product_category || 'Uncategorized';
                 tr.appendChild(tdCat);
 
                 // Initial Quantity
                 const tdInitQty = document.createElement('td');
-                tdInitQty.id = 'Product_dashboard_btn4_initial_quantity';
                 tdInitQty.textContent = p.initial_inventory || 0;
                 tr.appendChild(tdInitQty);
 
@@ -569,24 +563,69 @@
                 // Edit Button
                 const tdEdit = document.createElement('td');
                 const editBtn = document.createElement('button');
-                editBtn.className = 'dashboard_btn4_edit_btn btn btn-warning btn-sm';
-                editBtn.id = 'dashboard_btn4_edit_btn';
+                editBtn.className = 'btn btn-warning btn-sm';
                 editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
                 tdEdit.appendChild(editBtn);
                 tr.appendChild(tdEdit);
 
-                // Save Button
-                const tdSave = document.createElement('td');
-                const saveBtn = document.createElement('button');
-                saveBtn.className = 'dashboard_btn4_save_btn btn btn-success btn-sm';
-                saveBtn.textContent = 'SAVE';
-                tdSave.appendChild(saveBtn);
-                tr.appendChild(tdSave);
+               
+               // Save Button
+const tdSave = document.createElement('td');
+const saveBtn = document.createElement('button');
+saveBtn.className = 'btn btn-success btn-sm';
+saveBtn.textContent = 'SAVE';
+tdSave.appendChild(saveBtn);
+tr.appendChild(tdSave);
+
+
+// ===== ADD SAVE LOGIC RIGHT HERE =====
+saveBtn.addEventListener("click", function () {
+
+    const productName = tdName.textContent.trim();
+
+    const inputData = {
+        good_name: tdName.textContent.trim(),
+        good_price: tdPrice.querySelector('input')?.value || tdPrice.textContent,
+        good_image: tdImage.querySelector('input')?.value || tdImage.querySelector('img')?.src,
+        good_description: tdDesc.querySelector('textarea')?.value || tdDesc.textContent,
+        good_category: tdCat.querySelector('select')?.selectedOptions[0]?.text || tdCat.textContent,
+        good_init_qty: tdInitQty.querySelector('input')?.value || tdInitQty.textContent
+    };
+
+    fetch("/get_original_product_data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ good_name: productName })
+    })
+    .then(response => response.json())
+    .then(originalData => {
+        alert(
+            "ORIGINAL DATA:\n" + JSON.stringify(originalData, null, 2) +
+            "\n\nNEW INPUT DATA:\n" + JSON.stringify(inputData, null, 2)
+        );
+    })
+    .catch(error => console.error("Error:", error));
+
+});
+// ===== END SAVE LOGIC =====
+
+
+
+
+
+
+
+
+
+
+
+
+
 
                 // Delete Button
                 const tdDelete = document.createElement('td');
                 const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'dashboard_btn4_delete_btn btn btn-danger btn-sm';
+                deleteBtn.className = 'btn btn-danger btn-sm';
                 deleteBtn.textContent = '❌';
                 tdDelete.appendChild(deleteBtn);
                 tr.appendChild(tdDelete);
@@ -612,7 +651,7 @@
                                 }
                             }
 
-                            // Replace with input
+                            // Replace with input/select/textarea
                             if (index === 2) { // Image
                                 const input = document.createElement('input');
                                 input.type = 'text';
@@ -626,7 +665,26 @@
                                 textarea.value = cell.textContent;
                                 cell.innerHTML = '';
                                 cell.appendChild(textarea);
-                            } else { // Price, Category, Initial Qty
+                            } else if (index === 4) { // CATEGORY -> SELECT DROPDOWN
+                                const select = document.createElement('select');
+                                select.className = 'form-control';
+
+                                fetch('/get_product_categories')
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        data.forEach(cat => {
+                                            const option = document.createElement('option');
+                                            option.value = cat.product_category_number;
+                                            option.textContent = cat.product_category_name;
+                                            if (cat.product_category_name === cell.textContent) option.selected = true;
+                                            select.appendChild(option);
+                                        });
+                                    })
+                                    .catch(err => console.error('Failed to load categories:', err));
+
+                                cell.innerHTML = '';
+                                cell.appendChild(select);
+                            } else { // Price, Initial Qty
                                 const input = document.createElement('input');
                                 input.type = 'text';
                                 input.className = 'form-control';
@@ -635,6 +693,7 @@
                                 cell.appendChild(input);
                             }
                         });
+
                     } else {
                         tr.dataset.editing = 'false';
 
@@ -654,45 +713,10 @@
                     }
                 });
 
-                    saveBtn.addEventListener("click", function () {
-
-                    const productName = tdName.textContent.trim();
-
-                    const inputData = {
-                        good_name: tdName.textContent.trim(),
-                        good_price: tdPrice.querySelector('input')?.value || tdPrice.textContent,
-                        good_image: tdImage.querySelector('input')?.value || tdImage.querySelector('img')?.src,
-                        good_description: tdDesc.querySelector('textarea')?.value || tdDesc.textContent,
-                        good_category: tdCat.querySelector('input')?.value || tdCat.textContent,
-                        good_init_qty: tdInitQty.querySelector('input')?.value || tdInitQty.textContent
-                    };
-
-                    fetch("/get_original_product_data", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({ good_name: productName })
-                    })
-                    .then(response => response.json())
-                    .then(originalData => {
-
-                        alert(
-                            "ORIGINAL DATA:\n" + JSON.stringify(originalData, null, 2) +
-                            "\n\nNEW INPUT DATA:\n" + JSON.stringify(inputData, null, 2)
-                        );
-
-                    })
-                    .catch(error => {
-                        console.error("Error:", error);
-                    });
-
-                });
-
                 tbody.appendChild(tr);
             });
         });
-        
+
         let addInventoryClickCount = 0;
 
          document.querySelector('.dashboard-btn2').addEventListener('click', () => {
