@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template, render_template_stri
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta ,time
 import random
 import string
 from flask import Flask, jsonify
@@ -10,11 +10,11 @@ import json
 import mysql.connector
 from decimal import Decimal
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 import os
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'  # Required for sessions
-# ---------------- ORDER NUMBER LOGIC ----------------
 
 def index_to_suffix(index: int) -> str:
     letters = string.ascii_uppercase
@@ -63,7 +63,6 @@ def get_connection():
         database='bakery_busness'
     )
 
-# --- LOGIN PAGE TEMPLATE ---
 login_page_html = """
 <!DOCTYPE html>
 <html lang="en">
@@ -220,8 +219,6 @@ def get_reservation_statuses():
     cursor.close()
     conn.close()
     return jsonify(reservationstatuses )
-
-from decimal import Decimal
 
 DB_CONFIG = {
     "host": "localhost",
@@ -546,8 +543,6 @@ def activity_billing_queue():
 
     # Pass the tables to the template
     return render_template('activity_billing_queue.html', user=user_info)
-
-from datetime import datetime, timedelta, time
 
 @app.route('/activity_Tables', methods=["GET", "POST"])
 def activity_Tables():
