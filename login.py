@@ -14,7 +14,7 @@ from decimal import Decimal
 import os
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'  # Required for sessions
+app.secret_key = 'supersecretkey' 
 
 def index_to_suffix(index: int) -> str:
     letters = string.ascii_uppercase
@@ -54,7 +54,6 @@ def generate_next_order_number():
 
     return f"#{random_number}{suffix}"
 
-# Database connection function
 def get_connection():
     return mysql.connector.connect(
         host='localhost',
@@ -1092,7 +1091,6 @@ def product_inventory():
     # Render the template
     return render_template('Product_Inventory.html', user=user_info, products=products)
 
-# --- FIRST COLUMN: Order Numbers ---
 @app.route('/get_order_numbers')
 def get_order_numbers():
     conn = get_connection()
@@ -1115,7 +1113,6 @@ def get_order_numbers():
 
     return {"order_numbers": first_column}
 
-# --- SECOND COLUMN: Date & Time ---
 from datetime import datetime, timedelta
 @app.route('/get_order_datetime')
 def get_order_datetime():
@@ -1156,7 +1153,6 @@ def get_order_datetime():
 
     return {"order_datetime": second_column}
 
-# --- THIRD COLUMN: Customer Name ---
 @app.route('/get_customer_names')
 def get_customer_names():
     conn = get_connection()
