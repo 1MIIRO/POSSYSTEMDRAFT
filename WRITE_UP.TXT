@@ -1,0 +1,128 @@
+Tables in the database [bakery_busness]
+The tables below will be the used to design the product card 
++-----------------------------+
+| Tables_in_bakery_busness    |
++-----------------------------+     
+| product_categories          |
+| product_qty_status          |
+| product_qty_status_history  |
+| product_quantity_current    |
+| product_sold                |
+| product_stock_initial       |
+| products                    |
+| products_category_table     |         
++-----------------------------+
+
+products
++-------------+---------------+------+-----+---------+----------------+
+| Field       | Type          | Null | Key | Default | Extra          |
++-------------+---------------+------+-----+---------+----------------+
+| good_number | int           | NO   | PRI | NULL    | auto_increment |
+| good_name   | varchar(255)  | NO   |     | NULL    |                |
+| price       | decimal(10,2) | NO   |     | NULL    |                |
+| image_path  | varchar(500)  | YES  |     | NULL    |                |
+| description | text          | YES  |     | NULL    |                |
++-------------+---------------+------+-----+---------+----------------+
+5 rows in set (0.05 sec)
+
+product_categories;
++-------------------------+--------------+------+-----+---------+----------------+
+| Field                   | Type         | Null | Key | Default | Extra          |
++-------------------------+--------------+------+-----+---------+----------------+
+| product_category_number | int          | NO   | PRI | NULL    | auto_increment |
+| product_category_name   | varchar(255) | NO   |     | NULL    |                |
++-------------------------+--------------+------+-----+---------+----------------+
+2 rows in set (0.04 sec)
+
+products_category_table;
++-------------------------+------+------+-----+---------+-------+
+| Field                   | Type | Null | Key | Default | Extra |
++-------------------------+------+------+-----+---------+-------+
+| product_number          | int  | NO   | MUL | NULL    |       |
+| product_category_number | int  | NO   | MUL | NULL    |       |
++-------------------------+------+------+-----+---------+-------+
+2 rows in set (0.02 sec)
+
+
+product_stock_initial;
++------------------+-----------+------+-----+-------------------+-------------------+
+| Field            | Type      | Null | Key | Default           | Extra             |
++------------------+-----------+------+-----+-------------------+-------------------+
+| good_number      | int       | NO   | PRI | NULL              |                   |
+| initial_quantity | int       | NO   |     | NULL              |                   |
+| created_at       | timestamp | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++------------------+-----------+------+-----+-------------------+-------------------+
+3 rows in set (0.03 sec)
+
+product_sold;
++---------------+-----------+------+-----+-------------------+-------------------+
+| Field         | Type      | Null | Key | Default           | Extra             |
++---------------+-----------+------+-----+-------------------+-------------------+
+| sold_id       | int       | NO   | PRI | NULL              | auto_increment    |
+| good_number   | int       | NO   | MUL | NULL              |                   |
+| quantity_sold | int       | NO   |     | NULL              |                   |
+| sold_at       | timestamp | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++---------------+-----------+------+-----+-------------------+-------------------+
+4 rows in set (0.00 sec)
+
+
+product_quantity_current;
++------------------+-----------+------+-----+-------------------+-----------------------------------------------+
+| Field            | Type      | Null | Key | Default           | Extra                                         |
++------------------+-----------+------+-----+-------------------+-----------------------------------------------+
+| good_number      | int       | NO   | PRI | NULL              |                                               |
+| current_quantity | int       | NO   |     | NULL              |                                               |
+| updated_at       | timestamp | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |
++------------------+-----------+------+-----+-------------------+-----------------------------------------------+
+
+
+product_qty_status;
++-----------------+
+| status_name     |
++-----------------+
+| APPROACHING_LOW |
+| IN_STOCK        |
+| LOW_STOCK       |
+| MID_STOCK       |
+| OUT_OF_STOCK    |
++-----------------+
+
+Product display cards 
++--------------------------------------------------------------+
+| 	 	     PRODUCT CARDS  DISPLAY                          -----------------> Header_product_display_Card	.style{ background:"blue", colour:"white"}
+|                                                              |
++--------------------------------------------------------------+
+|                                                              |
+|  products.                                                           |
+|                                                              |
+|                                                              |
+|                                                              |
+|                                                              |
+|                                                              |
+|                                                              |
+|                                                              |
+|                                                              |
+|                                                              |
++--------------------------------------------------------------+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
