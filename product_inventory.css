@@ -267,7 +267,6 @@ body {
     }
 }
 
-
 .PRODUCT_SAVE_BTN{
   background-color: #28a745;
     color: white;
@@ -281,3 +280,40 @@ body {
     border: 2px solid black;
 }
 
+.search-bar {
+    background: white;
+    color: green;
+    font-weight: bold;
+    font-size: 16px;
+    padding: 5px;
+    border: 2px solid gray;
+    border-radius: 4px;
+}
+
+button {
+    background: white;
+    border: 2px solid blue;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.toggle {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 2px solid red;
+    color: red;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.output-text {
+    background: #f0f0f0;
+    padding: 10px;
+    margin-top: 5px;
+    max-height: 300px;   /* maximum height before scroll appears */
+    overflow-y: auto;    /* vertical scroll if content exceeds max-height */
+    width: 100%;
+    box-sizing: border-box;
+    white-space: pre-wrap; /* preserves line breaks in added content */
+}

@@ -1,0 +1,8 @@
+<h3>Product Description</h3>
+
+<form method="POST">
+    <textarea name="description_text" rows="8" cols="50">{{ description }}</textarea>
+    <br><br>
+    <button type="submit">Save</button>
+    <a href="{{ url_for('dashboard') }}"><button type="button">Back</button></a>
+</form>
