@@ -467,90 +467,42 @@
             }
 
             bigDisplay.innerHTML = '';
-            bigDisplay.style.display = 'flex';  // Use flex for side-by-side layout
+            bigDisplay.style.display = 'flex';
             bigDisplay.style.flexWrap = 'wrap';
             bigDisplay.style.gap = '15px';
 
-            // Create left panel (control panel)
-            const controlPanel = document.createElement('div');
-            controlPanel.style.width = '25%';
-            controlPanel.style.minWidth = '250px';
-            controlPanel.style.background = '#ffffff';
-            controlPanel.style.border = '2px solid #007bff';
-            controlPanel.style.borderRadius = '8px';
-            controlPanel.style.padding = '15px';
-            controlPanel.style.boxSizing = 'border-box';
+            // Fetch products JSON from Flask
+            const productsData = JSON.parse('{{ products|tojson|safe }}');
 
-            controlPanel.innerHTML = `
-                <input type="text" placeholder="........SEARCH BAR.........." class="search-bar"/>
-                <button class="enter-search">ENTER_SEARCH</button>
-                <hr/>
-                Product_editor_switch_Mode
-                <span class="toggle switch-editor">OFF</span>
-                <br/><br/>
-                <button class="editor-enter">Product_editor_Enter</button>
-                <hr/>
-                Product_Delete_mode
-                <span class="toggle switch-delete">OFF</span>
-                <br/><br/>
-                <button class="delete-item">Product_delete_Item_Enter</button>
-                <hr/>
-                <button class="select-inventory">Product_Select_Inventory_Enter</button>
-                <hr/>
-                <div class="output-text">This would be a text output to show</div>
-            `;
+            productsData.forEach(p => {
+                const card = document.createElement('div');
+                card.classList.add('product-card');
+                card.style.width = '180px';
+                card.style.flex = '0 0 auto';
+                card.style.border = '1px solid #007bff';
+                card.style.borderRadius = '8px';
+                card.style.padding = '10px';
+                card.style.background = '#fff';
+                card.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+                card.style.cursor = 'pointer';
 
-            // Create right panel (product card area)
-            const productCardArea = document.createElement('div');
-            productCardArea.style.width = '70%';
-            productCardArea.style.minWidth = '400px';
-            productCardArea.style.background = '#f0f0f0';
-            productCardArea.style.border = '2px solid #007bff';
-            productCardArea.style.borderRadius = '8px';
-            productCardArea.style.padding = '15px';
-            productCardArea.style.boxSizing = 'border-box';
-            productCardArea.innerHTML = `<!-- Product card / preview area -->`;
+                card.innerHTML = `
+                    <img src="/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}" 
+                        alt="${p.good_name}" width="150" height="150" style="object-fit:cover; border-radius:6px;">
+                    <div class="product-name">${p.good_name}</div>
+                    <div class="product-price">$${p.price}</div>
+                    <div class="product-category">${p.product_category || 'Uncategorized'}</div>
+                    <div class="product-qty">Qty: ${p.current_quantity !== undefined ? p.current_quantity : p.initial_inventory}</div>
+                `;
 
-            // Append both panels
-            bigDisplay.appendChild(controlPanel);
-            bigDisplay.appendChild(productCardArea);
+                // Optional: hover effect
+                card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-5px)');
+                card.addEventListener('mouseleave', () => card.style.transform = 'translateY(0)');
 
-            // === Toggle functionality ===
-            document.querySelector('.switch-editor').addEventListener('click', function() {
-                if (this.textContent === 'OFF') {
-                    this.textContent = 'ON';
-                    this.style.color = 'green';
-                    this.style.border = '2px solid green';
-                } else {
-                    this.textContent = 'OFF';
-                    this.style.color = 'red';
-                    this.style.border = '2px solid red';
-                }
+                bigDisplay.appendChild(card);
             });
-
-            document.querySelector('.switch-delete').addEventListener('click', function() {
-                if (this.textContent === 'OFF') {
-                    this.textContent = 'ON';
-                    this.style.color = 'green';
-                    this.style.border = '2px solid green';
-                } else {
-                    this.textContent = 'OFF';
-                    this.style.color = 'red';
-                    this.style.border = '2px solid red';
-                }
-            });
-            const outputText = controlPanel.querySelector('.output-text');
-
-            // Example: dynamically add text
-            function addOutputMessage(message) {
-                outputText.textContent += message + '\n';  // append new line
-                outputText.scrollTop = outputText.scrollHeight;  // auto scroll to bottom
-            }
-
-            // Example usage:
-            addOutputMessage("New info added to output");
         });
-
+       
         let addInventoryClickCount = 0;
 
          document.querySelector('.dashboard-btn2').addEventListener('click', () => {
