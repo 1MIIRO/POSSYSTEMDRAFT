@@ -453,56 +453,101 @@
        
        // Track clicks for Product Editor
         let productEditorClickCount = 0;
+        
 
         document.querySelector('.dashboard-btn4').addEventListener('click', () => {
-            const bigDisplay = document.getElementById('bigDisplay');
-            productEditorClickCount++;
+    const bigDisplay = document.getElementById('bigDisplay');
+    productEditorClickCount++;
 
-            // Double-click: clear display
-            if (productEditorClickCount === 2) {
-                bigDisplay.innerHTML = '';
-                bigDisplay.style.display = 'none';
-                productEditorClickCount = 0;
-                return;
-            }
+    // Double-click: clear display
+    if (productEditorClickCount === 2) {
+        bigDisplay.innerHTML = '';
+        bigDisplay.style.display = 'none';
+        productEditorClickCount = 0;
+        return;
+    }
 
-            bigDisplay.innerHTML = '';
-            bigDisplay.style.display = 'flex';
-            bigDisplay.style.flexWrap = 'wrap';
-            bigDisplay.style.gap = '15px';
+    bigDisplay.innerHTML = '';
+    bigDisplay.style.display = 'flex';
+    bigDisplay.style.flexWrap = 'wrap';
+    bigDisplay.style.gap = '15px';
 
-            // Fetch products JSON from Flask
-            const productsData = JSON.parse('{{ products|tojson|safe }}');
+    // Fetch products JSON from Flask
+    const productsData = JSON.parse('{{ products|tojson|safe }}');
 
-            productsData.forEach(p => {
-                const card = document.createElement('div');
-                card.classList.add('product-card');
-                card.style.width = '180px';
-                card.style.flex = '0 0 auto';
-                card.style.border = '1px solid #007bff';
-                card.style.borderRadius = '8px';
-                card.style.padding = '10px';
-                card.style.background = '#fff';
-                card.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
-                card.style.cursor = 'pointer';
+    productsData.forEach(p => {
+        const card = document.createElement('div');
+        card.classList.add('product-card');
+        card.style.width = '180px';
+        card.style.flex = '0 0 auto';
+        card.style.border = '1px solid #007bff';
+        card.style.borderRadius = '8px';
+        card.style.padding = '10px';
+        card.style.background = '#fff';
+        card.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+        card.style.cursor = 'pointer';
 
-                card.innerHTML = `
-                    <img src="/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}" 
-                        alt="${p.good_name}" width="150" height="150" style="object-fit:cover; border-radius:6px;">
-                    <div class="product-name">${p.good_name}</div>
-                    <div class="product-price">$${p.price}</div>
-                    <div class="product-category">${p.product_category || 'Uncategorized'}</div>
-                    <div class="product-qty">Qty: ${p.current_quantity !== undefined ? p.current_quantity : p.initial_inventory}</div>
-                `;
+        card.innerHTML = `
+            <img src="/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}" 
+                alt="${p.good_name}" width="150" height="150" style="object-fit:cover; border-radius:6px;">
+            <div class="product-name">${p.good_name}</div>
+            <div class="product-price">$${p.price}</div>
+            <div class="product-category">${p.product_category || 'Uncategorized'}</div>
+            <div class="product-qty">Qty: ${p.current_quantity !== undefined ? p.current_quantity : p.initial_inventory}</div>
+        `;
 
-                // Optional: hover effect
-                card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-5px)');
-                card.addEventListener('mouseleave', () => card.style.transform = 'translateY(0)');
+        // Hover effect
+        card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-5px)');
+        card.addEventListener('mouseleave', () => card.style.transform = 'translateY(0)');
 
-                bigDisplay.appendChild(card);
-            });
+        // --- ADD POPUP ON CLICK ---
+        card.addEventListener('click', () => {
+            // Remove old popup if any
+            const oldPopup = document.getElementById('productPopup');
+            if (oldPopup) oldPopup.remove();
+
+            const popup = document.createElement('div');
+            popup.id = 'productPopup';
+            popup.style.position = 'fixed';
+            popup.style.top = '50%';
+            popup.style.left = '50%';
+            popup.style.transform = 'translate(-50%, -50%)';
+            popup.style.background = '#fff';
+            popup.style.border = '1px solid #007bff';
+            popup.style.borderRadius = '8px';
+            popup.style.padding = '20px';
+            popup.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+            popup.style.zIndex = 9999;
+            popup.style.maxWidth = '400px';
+            popup.style.width = '90%';
+            popup.style.maxHeight = '80%';
+            popup.style.overflowY = 'auto';
+
+            popup.innerHTML = `
+                <button style="float:right;" onclick="this.parentElement.remove()">X</button>
+                <img src="/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}" 
+                    alt="${p.good_name}" width="200" height="200" style="object-fit:cover; border-radius:6px; display:block; margin:auto;">
+                <h3>${p.good_name}</h3>
+                <p><strong>Price:</strong> $${p.price}</p>
+                <p><strong>Description:</strong> ${p.description || 'No description'}</p>
+                <p><strong>Category:</strong> ${p.product_category || 'Uncategorized'}</p>
+                <p><strong>Initial Qty:</strong> ${p.initial_inventory || 0}</p>
+                <p><strong>Current Qty:</strong> ${p.current_quantity !== undefined ? p.current_quantity : 0}</p>
+                <p><strong>Last Updated:</strong> ${p.updated_at || 'N/A'}</p>
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button>Save</button>
+                    <button>Clear</button>
+                    <button>Edit</button>
+                </div>
+            `;
+
+            document.body.appendChild(popup);
         });
-       
+
+        bigDisplay.appendChild(card);
+    });
+});
+  
         let addInventoryClickCount = 0;
 
          document.querySelector('.dashboard-btn2').addEventListener('click', () => {
