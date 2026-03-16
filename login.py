@@ -2523,11 +2523,55 @@ def inventory_status():
 
     return render_template('Product_Inventory.html', products=products)
 
+@app.route('/Inventory_Product_editor_info_dashboaurd_btn4_')
+def Inventory_Product_editor_info_dashboaurd_btn4_():
+
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT 
+            MAX(p.image_path) AS image_path,
+            MAX(p.good_name) AS good_name,
+            MAX(p.price) AS price,
+            MAX(p.description) AS description,
+            COALESCE(MAX(c.product_category_name), 'Uncategorized') AS product_category,
+            COALESCE(MAX(psi.initial_quantity), 0) AS initial_inventory,
+            COALESCE(SUM(ps.quantity_sold), 0) AS number_of_units_sold,
+            COALESCE(MAX(psi.initial_quantity) - COALESCE(SUM(ps.quantity_sold), 0), 0) AS current_quantity
+        FROM products p
+        LEFT JOIN products_category_table pct
+            ON p.good_number = pct.product_number
+        LEFT JOIN product_categories c
+            ON pct.product_category_number = c.product_category_number
+        LEFT JOIN product_stock_initial psi
+            ON p.good_number = psi.good_number
+        LEFT JOIN product_sold ps
+            ON p.good_number = ps.good_number
+        GROUP BY p.good_number
+        ORDER BY p.good_number
+    """)
+
+    products = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(products)
+
+IMAGES_FOLDER = os.path.join('static', 'image_changes')
+
+@app.route('/list_food_images')
+def list_food_images():
+    files = [f for f in os.listdir(IMAGES_FOLDER) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
+    return jsonify([f'/static/image_changes/{f}' for f in files])
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login_page'))
 
 if __name__ == "__main__":
+  
  app.run(debug=False)
  
