@@ -450,165 +450,176 @@
                 });
 
             });
-   
-        let productEditorClickCount = 0;
+    
+let productEditorClickCount = 0;
 
-        document.querySelector('.dashboard-btn4').addEventListener('click', async () => {
+document.querySelector('.dashboard-btn4').addEventListener('click', async () => {
+    const bigDisplay = document.getElementById('bigDisplay');
+    productEditorClickCount++;
 
-            const bigDisplay = document.getElementById('bigDisplay');
-            productEditorClickCount++;
+    // Double-click clears display
+    if (productEditorClickCount === 2) {
+        bigDisplay.innerHTML = '';
+        bigDisplay.style.display = 'none';
+        productEditorClickCount = 0;
+        return;
+    }
 
-            // double click clears the display
-            if (productEditorClickCount === 2) {
-                bigDisplay.innerHTML = '';
-                bigDisplay.style.display = 'none';
-                productEditorClickCount = 0;
-                return;
-            }
+    bigDisplay.innerHTML = '';
+    bigDisplay.style.display = 'flex';
+    bigDisplay.style.flexWrap = 'wrap';
+    bigDisplay.style.justifyContent = 'center';
+    bigDisplay.style.gap = '15px';
 
-            bigDisplay.innerHTML = '';
-            bigDisplay.style.display = 'flex';
-            bigDisplay.style.flexWrap = 'wrap';
-            bigDisplay.style.justifyContent = 'center';
-            bigDisplay.style.gap = '15px';
+    const response = await fetch('/Inventory_Product_editor_info_dashboaurd_btn4_');
+    const productsData = await response.json();
 
-            const response = await fetch('/Inventory_Product_editor_info_dashboaurd_btn4_');
-            const productsData = await response.json();
+    // Optional: fetch available images for popup
+    let availableImages = [];
+    try {
+        const imgRes = await fetch('/list_food_images');
+        availableImages = await imgRes.json();
+    } catch (err) {
+        console.warn('No server images fetched', err);
+    }
 
-            let availableImages = [];
-            try {
-                const imgRes = await fetch('/list_food_images');
-                availableImages = await imgRes.json();
-            } catch (err) {
-                console.error('Failed to fetch server images', err);
-            }
+    productsData.forEach(p => {
+        const card = document.createElement('div');
+        card.classList.add('product-card');
+        card.style.width = '180px';
+        card.style.flex = '0 0 auto';
+        card.style.cursor = 'pointer';
 
-            productsData.forEach(p => {
+        card.innerHTML = `
+            <img src="/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}"
+                 width="150" height="150" style="object-fit:cover; border-radius:6px;">
+            <div class="product-name">${p.good_name}</div>
+            <div class="product-price">$${p.price}</div>
+            <div class="product-category">${p.product_category || 'Uncategorized'}</div>
+            <div class="product-qty">Qty: ${p.current_quantity ?? p.initial_inventory}</div>
+        `;
 
-                const card = document.createElement('div');
-                card.classList.add('product-card');
-                card.style.width = '180px';
-                card.style.flex = '0 0 auto';
-                card.style.border = '1px solid #007bff';
-                card.style.borderRadius = '8px';
-                card.style.padding = '10px';
-                card.style.background = '#fff';
-                card.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
-                card.style.cursor = 'pointer';
+        // --- CLICK: Show popup with editable fields ---
+        card.addEventListener('click', () => {
+            const oldPopup = document.getElementById('productPopup');
+            if (oldPopup) oldPopup.remove();
 
-                card.innerHTML = `
-                    <img src="/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}"
-                        width="150" height="150"
-                        style="object-fit:cover;border-radius:6px;">
-                    <div>${p.good_name}</div>
-                    <div>$${p.price}</div>
-                    <div>${p.product_category || 'Uncategorized'}</div>
-                    <div>Qty: ${p.current_quantity ?? p.initial_inventory}</div>
-                `;
+            const popup = document.createElement('div');
+            popup.id = 'productPopup';
+            popup.style = `
+                position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
+                background:#fff; border:1px solid #007bff; border-radius:8px;
+                padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.3);
+                z-index:9999; max-width:400px; width:90%; max-height:80%; overflow-y:auto;
+            `;
 
-                card.addEventListener('click', () => {
+            popup.innerHTML = `
+                <button style="float:right;" onclick="this.parentElement.remove()">X</button>
+                <h3 id="editName">${p.good_name}</h3>
 
-                    const popup = document.createElement('div');
-                    popup.style.position = 'fixed';
-                    popup.style.top = '50%';
-                    popup.style.left = '50%';
-                    popup.style.transform = 'translate(-50%, -50%)';
-                    popup.style.background = '#fff';
-                    popup.style.border = '1px solid #007bff';
-                    popup.style.borderRadius = '8px';
-                    popup.style.padding = '20px';
-                    popup.style.zIndex = 9999;
-                    popup.style.maxWidth = '400px';
-                    popup.style.width = '90%';
-                    popup.style.maxHeight = '80%';
-                    popup.style.overflowY = 'auto';
+                <div style="text-align:center; margin-bottom:15px;">
+                    <span id="imageDisplay">
+                        <img id="mainImg" src="/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}" 
+                             width="200" height="200" style="object-fit:cover; border-radius:6px;">
+                    </span>
+                    <input id="editImage" type="file" style="display:none;">
+                </div>
 
-                    popup.innerHTML = `
-                        <button style="float:right" onclick="this.parentElement.remove()">X</button>
-                        <h3 id="editName">${p.good_name}</h3>
-                        <img id="mainImg" src="/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}"
-                            width="200" height="200"
-                            style="display:block;margin:auto;object-fit:cover;border-radius:6px;">
-                    `;
+                <p><strong>Price:</strong> <span id="priceDisplay">${p.price}</span>
+                   <input id="editPrice" type="number" value="${p.price}" style="display:none;"></p>
 
-                    // --- IMAGE LIST (FIXED + SCROLLABLE, BETWEEN IMAGE AND INFO) ---
-                    const imgListDiv = document.createElement('div');
-                    imgListDiv.style.display = 'flex';
-                    imgListDiv.style.flexWrap = 'nowrap';
-                    imgListDiv.style.gap = '10px';
-                    imgListDiv.style.overflowX = 'auto';
-                    imgListDiv.style.height = '120px';
-                    imgListDiv.style.margin = '10px 0';
-                    imgListDiv.style.border = '1px solid #ccc';
-                    imgListDiv.style.padding = '5px';
-                    imgListDiv.style.background = '#f8f9fa';
+                <p><strong>Description:</strong> <span id="descDisplay">${p.description || ''}</span>
+                   <textarea id="editDesc" style="display:none;">${p.description || ''}</textarea></p>
 
-                    availableImages.forEach(imgPath => {
-                        const thumb = document.createElement('img');
-                        thumb.src = imgPath;
-                        thumb.style.width = '100px';
-                        thumb.style.height = '100px';
-                        thumb.style.objectFit = 'cover';
-                        thumb.style.flex = '0 0 auto';
-                        thumb.style.cursor = 'pointer';
+                <p><strong>Category:</strong> <span id="catDisplay">${p.product_category || ''}</span>
+                   <input id="editCat" type="text" value="${p.product_category || ''}" style="display:none;"></p>
 
-                        thumb.addEventListener('click', () => {
-                            popup.querySelector('#mainImg').src = imgPath;
-                        });
+                <p><strong>Initial Qty:</strong> <span id="initialQtyDisplay">${p.initial_inventory || 0}</span>
+                   <input id="editInitialQty" type="number" value="${p.initial_inventory || 0}" style="display:none;"></p>
 
-                        imgListDiv.appendChild(thumb);
-                    });
+                <p><strong>Current Qty:</strong> <span id="currentQtyDisplay">${p.current_quantity ?? 0}</span></p>
 
-                    popup.appendChild(imgListDiv);
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button id="editBtn">Edit</button>
+                    <button id="saveBtn">Save</button>
+                    <button id="clearBtn">Clear</button>
+                </div>
+            `;
 
-                    // --- INFO SECTION ---
-                    const infoDiv = document.createElement('div');
-                    infoDiv.innerHTML = `
-                        <p><strong>Price:</strong> <span id="editPrice">${p.price}</span></p>
-                        <p><strong>Description:</strong> <span id="editDesc">${p.description || ''}</span></p>
-                        <p><strong>Category:</strong> <span id="editCat">${p.product_category || ''}</span></p>
-                        <p><strong>Initial Qty:</strong> <span id="editInitialQty">${p.initial_inventory || 0}</span></p>
-                        <p><strong>Current Qty:</strong> <span>${p.current_quantity ?? 0}</span></p>
-                    `;
-                    popup.appendChild(infoDiv);
+            document.body.appendChild(popup);
 
-                    // --- BUTTONS (UNCHANGED) ---
-                    const buttonsDiv = document.createElement('div');
-                    buttonsDiv.style.display = 'flex';
-                    buttonsDiv.style.gap = '10px';
-                    buttonsDiv.style.marginTop = '15px';
-                    buttonsDiv.innerHTML = `
-                        <button id="saveBtn">Save</button>
-                        <button id="clearBtn">Clear</button>
-                        <button id="editBtn">Edit</button>
-                    `;
-                    popup.appendChild(buttonsDiv);
+            const editBtn = popup.querySelector('#editBtn');
+            const saveBtn = popup.querySelector('#saveBtn');
+            const clearBtn = popup.querySelector('#clearBtn');
 
-                    document.body.appendChild(popup);
+            const fields = {
+                price: popup.querySelector('#editPrice'),
+                description: popup.querySelector('#editDesc'),
+                category: popup.querySelector('#editCat'),
+                initialQty: popup.querySelector('#editInitialQty'),
+                image: popup.querySelector('#editImage')
+            };
+            const displays = {
+                price: popup.querySelector('#priceDisplay'),
+                description: popup.querySelector('#descDisplay'),
+                category: popup.querySelector('#catDisplay'),
+                initialQty: popup.querySelector('#initialQtyDisplay'),
+                image: popup.querySelector('#imageDisplay')
+            };
 
-                    const editBtn = popup.querySelector('#editBtn');
-                    const fields = {
-                        price: popup.querySelector('#editPrice'),
-                        description: popup.querySelector('#editDesc'),
-                        category: popup.querySelector('#editCat'),
-                        initialQty: popup.querySelector('#editInitialQty')
-                    };
+            let isEditing = false;
 
-                    let isEditing = false;
-
-                    editBtn.addEventListener('click', () => {
-                        isEditing = !isEditing;
-                        Object.values(fields).forEach(f => {
-                            f.contentEditable = isEditing ? "true" : "false";
-                        });
-                    });
-
+            editBtn.addEventListener('click', () => {
+                isEditing = !isEditing;
+                Object.keys(fields).forEach(key => {
+                    fields[key].style.display = isEditing ? 'inline-block' : 'none';
+                    if (displays[key]) displays[key].style.display = isEditing ? 'none' : 'inline-block';
                 });
+            });
 
-                bigDisplay.appendChild(card);
+            clearBtn.addEventListener('click', () => {
+                Object.keys(fields).forEach(key => {
+                    if (fields[key].tagName === 'INPUT' || fields[key].tagName === 'TEXTAREA') fields[key].value = '';
+                });
+            });
+
+            saveBtn.addEventListener('click', async () => {
+                const payload = {
+                    product_id: p.product_id,  // if your backend needs an ID
+                    price: fields.price.value,
+                    description: fields.description.value,
+                    category: fields.category.value,
+                    initial_inventory: fields.initialQty.value
+                };
+                // Optional: include image if uploaded
+
+                const result = await fetch('/update_product', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await result.json();
+                if(data.success){
+                    alert('Product updated successfully!');
+                    popup.remove();
+                } else {
+                    alert('Failed to update product: ' + data.error);
+                }
             });
 
         });
+
+        bigDisplay.appendChild(card);
+    });
+});
+
+
+
+
+
+
+
+
 
         let addInventoryClickCount = 0;
 
