@@ -58,7 +58,7 @@ def get_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',
-        password='1234',
+        password='12345',
         database='bakery_busness'
     )
 
@@ -222,7 +222,7 @@ def get_reservation_statuses():
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "1234",
+    "password": "12345",
     "database": "bakery_busness"
 }
 
@@ -2531,6 +2531,7 @@ def Inventory_Product_editor_info_dashboaurd_btn4_():
 
     cursor.execute("""
         SELECT 
+            p.good_number,
             MAX(p.image_path) AS image_path,
             MAX(p.good_name) AS good_name,
             MAX(p.price) AS price,
@@ -2558,6 +2559,35 @@ def Inventory_Product_editor_info_dashboaurd_btn4_():
     conn.close()
 
     return jsonify(products)
+
+@app.route('/update_product', methods=['POST'])
+def update_product():
+    data = request.get_json()
+    good_number = data.get('good_number')
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Update products table if values changed
+    if 'price' in data:
+        cursor.execute("UPDATE products SET price=%s WHERE good_number=%s", (data['price'], good_number))
+    if 'description' in data:
+        cursor.execute("UPDATE products SET description=%s WHERE good_number=%s", (data['description'], good_number))
+    if 'category' in data:
+        # Find category number
+        cursor.execute("SELECT product_category_number FROM product_categories WHERE product_category_name=%s", (data['category'],))
+        cat_row = cursor.fetchone()
+        if cat_row:
+            category_number = cat_row[0]
+            cursor.execute("UPDATE products_category_table SET product_category_number=%s WHERE product_number=%s", (category_number, good_number))
+    if 'initial_inventory' in data:
+        cursor.execute("UPDATE product_stock_initial SET initial_quantity=%s, created_at=NOW() WHERE good_number=%s", (data['initial_inventory'], good_number))
+    if 'image_path' in data:
+        cursor.execute("UPDATE products SET image_path=%s WHERE good_number=%s", (data['image_path'], good_number))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({"success": True})
 
 IMAGES_FOLDER = os.path.join('static', 'image_changes')
 
