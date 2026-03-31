@@ -450,13 +450,19 @@
                 });
 
             });
-            
-        let productEditorClickCount = 0;
+       
+let productEditorClickCount = 0;
+
+function getImageSrc(path) {
+    if (!path) return '/static/placeholder.png';
+    return '/static/' + path.replace(/\\/g, '/').replace(/^static\//, '');
+}
 
 document.querySelector('.dashboard-btn4').addEventListener('click', async () => {
     const bigDisplay = document.getElementById('bigDisplay');
     productEditorClickCount++;
 
+    // Double-click clears display
     if (productEditorClickCount === 2) {
         bigDisplay.innerHTML = '';
         bigDisplay.style.display = 'none';
@@ -464,41 +470,146 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
         return;
     }
 
+    // Show display
     bigDisplay.innerHTML = '';
     bigDisplay.style.display = 'flex';
     bigDisplay.style.flexWrap = 'wrap';
     bigDisplay.style.justifyContent = 'center';
     bigDisplay.style.gap = '15px';
 
-    const response = await fetch('/Inventory_Product_editor_info_dashboaurd_btn4_');
-    const productsData = await response.json();
-
-    let availableImages = [];
     try {
-        const imgRes = await fetch('/list_food_images');
-        availableImages = await imgRes.json();
+        const response = await fetch('/Inventory_Product_editor_info_dashboaurd_btn4_');
+        const productsData = await response.json();
+
+        // Optional images fetch (kept as you wanted)
+        let availableImages = [];
+        try {
+            const imgRes = await fetch('/list_food_images');
+            availableImages = await imgRes.json();
+        } catch (err) {
+            console.warn('No server images fetched', err);
+        }
+
+        productsData.forEach(p => {
+            const card = document.createElement('div');
+            card.classList.add('product-card');
+            card.style.width = '180px';
+            card.style.cursor = 'pointer';
+
+            card.innerHTML = `
+                <img src="${getImageSrc(p.image_path)}"
+                     width="150" height="150"
+                     style="object-fit:cover; border-radius:6px;">
+                <div class="product-name">${p.good_name}</div>
+                <div class="product-price">$${p.price}</div>
+                <div class="product-category">${p.product_category || 'Uncategorized'}</div>
+                <div class="product-qty">Qty: ${p.current_quantity ?? p.initial_inventory}</div>
+            `;
+
+            // ===== POPUP =====
+            card.addEventListener('click', () => {
+                const oldPopup = document.getElementById('productPopup');
+                if (oldPopup) oldPopup.remove();
+
+                const popup = document.createElement('div');
+                popup.id = 'productPopup';
+                popup.style = `
+                    position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
+                    background:#fff; border:1px solid #007bff; border-radius:8px;
+                    padding:20px; z-index:9999; max-width:400px; width:90%;
+                `;
+
+                popup.innerHTML = `
+                    <button style="float:right;" onclick="this.parentElement.remove()">X</button>
+                    <h3>${p.good_name}</h3>
+
+                    <img id="mainImg" src="${getImageSrc(p.image_path)}"
+                         width="200" height="200"
+                         style="object-fit:cover; border-radius:6px; display:block; margin:auto;">
+
+                    <input id="editImage" type="file">
+
+                    <p>Price:
+                        <input id="editPrice" type="number" value="${p.price}">
+                    </p>
+
+                    <p>Description:
+                        <textarea id="editDesc">${p.description || ''}</textarea>
+                    </p>
+
+                    <p>Category:
+                        <input id="editCat" value="${p.product_category || ''}">
+                    </p>
+
+                    <p>Initial Qty:
+                        <input id="editInitialQty" type="number" value="${p.initial_inventory || 0}">
+                    </p>
+
+                    <button id="saveBtn">Save</button>
+                `;
+
+                document.body.appendChild(popup);
+
+                const saveBtn = popup.querySelector('#saveBtn');
+
+                saveBtn.addEventListener('click', async () => {
+                    const formData = new FormData();
+                    formData.append('good_number', p.good_number);
+
+                    formData.append('price', popup.querySelector('#editPrice').value);
+                    formData.append('description', popup.querySelector('#editDesc').value);
+                    formData.append('category', popup.querySelector('#editCat').value);
+                    formData.append('initial_inventory', popup.querySelector('#editInitialQty').value);
+
+                    const fileInput = popup.querySelector('#editImage');
+                    if (fileInput.files.length > 0) {
+                        formData.append('image', fileInput.files[0]);
+                    }
+
+                    try {
+                        const result = await fetch('/update_product', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const data = await result.json();
+
+                        if (data.success) {
+
+                            // 🔄 REFRESH UI FROM DB (real fix)
+                            document.querySelector('.dashboard-btn4').click();
+                            productEditorClickCount = 1;
+
+                            // ✅ TOAST
+                            const toast = document.createElement('div');
+                            toast.textContent = `Product updated: ${p.good_name}`;
+                            toast.style = `
+                                position:fixed; bottom:20px; left:50%;
+                                transform:translateX(-50%);
+                                background:#28a745; color:#fff;
+                                padding:10px 20px; border-radius:5px;
+                            `;
+                            document.body.appendChild(toast);
+                            setTimeout(() => toast.remove(), 2000);
+
+                            popup.remove();
+
+                        } else {
+                            alert(data.error);
+                        }
+
+                    } catch (err) {
+                        alert('Error: ' + err.message);
+                    }
+                });
+            });
+
+            bigDisplay.appendChild(card);
+        });
+
     } catch (err) {
-        console.warn('No server images fetched', err);
+        console.error(err);
     }
-
-    productsData.forEach(p => {
-        const card = document.createElement('div');
-        card.classList.add('product-card');
-        card.style.width = '180px';
-        card.style.flex = '0 0 auto';
-        card.style.cursor = 'pointer';
-
-        card.innerHTML = `
-            <img src="/static/${p.image_path.replace(/\\/g,'/').split('static/').pop()}"
-                width="150" height="150" style="object-fit:cover; border-radius:6px;">
-            <div class="product-name">${p.good_name}</div>
-            <div class="product-price">$${p.price}</div>
-            <div class="product-category">${p.product_category || 'Uncategorized'}</div>
-            <div class="product-qty">Qty: ${p.current_quantity ?? p.initial_inventory}</div>
-        `;
-
-        // ... rest of popup, edit, save, clear logic
-    });
 });
 
         let addInventoryClickCount = 0;
