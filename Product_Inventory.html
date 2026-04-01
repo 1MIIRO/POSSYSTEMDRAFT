@@ -451,7 +451,7 @@
 
             });
  
-let productEditorClickCount = 0;
+        let productEditorClickCount = 0;
 
 document.querySelector('.dashboard-btn4').addEventListener('click', async () => {
     const bigDisplay = document.getElementById('bigDisplay');
@@ -475,69 +475,88 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
         const response = await fetch('/Inventory_Product_editor_info_dashboaurd_btn4_');
         const productsData = await response.json();
 
-        productsData.forEach(p => {
+        productsData.forEach(product => {
             const card = document.createElement('div');
             card.classList.add('product-card');
             card.style.width = '180px';
             card.style.cursor = 'pointer';
 
-            // Just use the image_path from DB
+            const cardImagePath = product.image_path && product.image_path.trim() !== ''
+                ? product.image_path
+                : '/static/default.png';
+
             card.innerHTML = `
-                <img src="${p.image_path}" width="150" height="150"
-                     style="object-fit:cover; border-radius:6px;">
-                <div class="product-name">${p.good_name}</div>
-                <div class="product-price">$${p.price}</div>
-                <div class="product-category">${p.product_category || 'Uncategorized'}</div>
-                <div class="product-qty">Qty: ${p.current_quantity ?? p.initial_inventory}</div>
+                <img src="${cardImagePath}" width="150" height="150" style="object-fit:cover; border-radius:6px;">
+                <div class="product-name">${product.good_name}</div>
+                <div class="product-price">$${product.price}</div>
+                <div class="product-category">${product.product_category || 'Uncategorized'}</div>
+                <div class="product-qty">Qty: ${product.current_quantity ?? product.initial_inventory}</div>
             `;
 
-            // Popup
             card.addEventListener('click', () => {
                 const oldPopup = document.getElementById('productPopup');
                 if (oldPopup) oldPopup.remove();
 
+                let selectedProduct = { ...product };
+
                 const popup = document.createElement('div');
                 popup.id = 'productPopup';
                 popup.style = `
-                    position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
-                    background:#fff; border:1px solid #007bff; border-radius:8px;
-                    padding:20px; z-index:9999; max-width:400px; width:90%;
+                    position:fixed;
+                    top:50%;
+                    left:50%;
+                    transform:translate(-50%, -50%);
+                    background:#fff;
+                    border:1px solid #007bff;
+                    border-radius:8px;
+                    padding:20px;
+                    z-index:9999;
+                    max-width:400px;
+                    width:90%;
+                    box-shadow:0 4px 12px rgba(0,0,0,0.2);
                 `;
 
-                // Image non-editable
+                const popupImagePath = selectedProduct.image_path && selectedProduct.image_path.trim() !== ''
+                    ? selectedProduct.image_path
+                    : '/static/default.png';
+
                 popup.innerHTML = `
                     <button style="float:right;" onclick="this.parentElement.remove()">X</button>
-                    <h3>${p.good_name}</h3>
+                    <h3>${selectedProduct.good_name}</h3>
 
-                    <div style="text-align:center; margin-bottom:10px;">
-                        <img src="${p.image_path}" width="200" height="200"
-                             style="object-fit:cover; border-radius:6px;">
+                    <div id="imageContainer" style="text-align:center; margin-bottom:10px;">
+                        <img src="${popupImagePath}" width="200" height="200" style="object-fit:cover; border-radius:6px;">
                     </div>
 
-                    <p><strong>Price:</strong> 
-                        <span id="priceDisplay">${p.price}</span>
-                        <input id="editPrice" type="number" value="${p.price}" style="display:none;">
+                    <div id="imageSelectContainer" style="margin-bottom:10px; display:none;">
+                        <label for="imageSelect">Choose Image:</label>
+                        <select id="imageSelect" class="form-control"></select>
+                    </div>
+
+                    <p><strong>Price:</strong>
+                        <span id="priceDisplay">${selectedProduct.price}</span>
+                        <input id="editPrice" type="number" value="${selectedProduct.price}" style="display:none;" class="form-control">
                     </p>
 
-                    <p><strong>Description:</strong> 
-                        <span id="descDisplay">${p.description || ''}</span>
-                        <textarea id="editDesc" style="display:none;">${p.description || ''}</textarea>
+                    <p><strong>Description:</strong>
+                        <span id="descriptionDisplay">${selectedProduct.description || ''}</span>
+                        <textarea id="editDescription" style="display:none;" class="form-control">${selectedProduct.description || ''}</textarea>
                     </p>
 
-                    <p><strong>Category:</strong> 
-                        <span id="catDisplay">${p.product_category || ''}</span>
-                        <input id="editCat" value="${p.product_category || ''}" style="display:none;">
+                    <p><strong>Category:</strong>
+                        <span id="categoryDisplay">${selectedProduct.product_category || ''}</span>
+                        <input id="editCategory" value="${selectedProduct.product_category || ''}" style="display:none;" class="form-control">
                     </p>
 
-                    <p><strong>Initial Qty:</strong> 
-                        <span id="initialQtyDisplay">${p.initial_inventory || 0}</span>
-                        <input id="editInitialQty" type="number" value="${p.initial_inventory || 0}" style="display:none;">
+                    <p><strong>Initial Qty:</strong>
+                        <span id="initialQtyDisplay">${selectedProduct.initial_inventory || 0}</span>
+                        <input id="editInitialQty" type="number" value="${selectedProduct.initial_inventory || 0}" style="display:none;" class="form-control">
                     </p>
 
                     <div style="display:flex; gap:10px; margin-top:15px;">
-                        <button id="editBtn">Edit</button>
-                        <button id="saveBtn">Save</button>
-                        <button id="clearBtn">Clear</button>
+                        <button id="editBtn" class="btn btn-primary btn-sm">Edit</button>
+                        <button id="saveBtn" class="btn btn-success btn-sm">Save</button>
+                        <button id="clearBtn" class="btn btn-secondary btn-sm">Clear</button>
                     </div>
                 `;
 
@@ -546,11 +565,14 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
                 const editBtn = popup.querySelector('#editBtn');
                 const saveBtn = popup.querySelector('#saveBtn');
                 const clearBtn = popup.querySelector('#clearBtn');
+                const imageContainer = popup.querySelector('#imageContainer');
+                const imageSelectContainer = popup.querySelector('#imageSelectContainer');
+                const imageSelect = popup.querySelector('#imageSelect');
 
                 const fields = {
                     price: popup.querySelector('#editPrice'),
-                    description: popup.querySelector('#editDesc'),
-                    category: popup.querySelector('#editCat'),
+                    description: popup.querySelector('#editDescription'),
+                    category: popup.querySelector('#editCategory'),
                     initialQty: popup.querySelector('#editInitialQty')
                 };
 
@@ -558,44 +580,110 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
 
                 editBtn.addEventListener('click', () => {
                     isEditing = !isEditing;
+
+                    // Toggle text/input fields
                     Object.keys(fields).forEach(key => {
                         fields[key].style.display = isEditing ? 'inline-block' : 'none';
-                        const displayEl = popup.querySelector(`#${key}Display`);
+
+                        let displayId = '';
+                        if (key === 'price') displayId = 'priceDisplay';
+                        if (key === 'description') displayId = 'descriptionDisplay';
+                        if (key === 'category') displayId = 'categoryDisplay';
+                        if (key === 'initialQty') displayId = 'initialQtyDisplay';
+
+                        const displayEl = popup.querySelector(`#${displayId}`);
                         if (displayEl) displayEl.style.display = isEditing ? 'none' : 'inline-block';
                     });
+
+                    if (isEditing) {
+                        imageContainer.innerHTML = '';
+                        imageContainer.style.background = '#fff';
+                        imageContainer.style.height = '200px';
+                        imageContainer.style.border = '1px solid #007bff';
+                        imageContainer.style.borderRadius = '6px';
+                        imageContainer.style.display = 'flex';
+                        imageContainer.style.alignItems = 'center';
+                        imageContainer.style.justifyContent = 'center';
+                        imageContainer.innerHTML = `<span style="color:#888;">Image preview hidden while editing</span>`;
+
+                        imageSelectContainer.style.display = 'block';
+
+                        fetch('/list_food_images')
+                            .then(res => res.json())
+                            .then(files => {
+                                imageSelect.innerHTML = '<option value="">Select image</option>';
+
+                                const currentImageName = (selectedProduct.image_path || '').split('/').pop();
+
+                                files.forEach(fileName => {
+                                    const option = document.createElement('option');
+                                    option.value = fileName;
+                                    option.textContent = fileName;
+
+                                    if (fileName === currentImageName) {
+                                        option.selected = true;
+                                    }
+
+                                    imageSelect.appendChild(option);
+                                });
+                            })
+                            .catch(err => {
+                                console.error('Error loading image list:', err);
+                            });
+                    } else {
+                        const restoredImagePath = selectedProduct.image_path && selectedProduct.image_path.trim() !== ''
+                            ? selectedProduct.image_path
+                            : '/static/default.png';
+
+                        imageContainer.innerHTML = `
+                            <img src="${restoredImagePath}" width="200" height="200" style="object-fit:cover; border-radius:6px;">
+                        `;
+                        imageContainer.style.background = '';
+                        imageContainer.style.border = '';
+                        imageContainer.style.display = 'block';
+                        imageSelectContainer.style.display = 'none';
+                    }
                 });
 
                 clearBtn.addEventListener('click', () => {
-                    Object.values(fields).forEach(field => {
-                        if (field.tagName === 'INPUT' || field.tagName === 'TEXTAREA') {
-                            field.value = '';
-                        }
-                    });
+                    fields.price.value = '';
+                    fields.description.value = '';
+                    fields.category.value = '';
+                    fields.initialQty.value = '';
+                    if (imageSelect) imageSelect.selectedIndex = 0;
                 });
 
                 saveBtn.addEventListener('click', async () => {
                     const formData = new FormData();
-                    formData.append('good_number', p.good_number);
+                    formData.append('good_number', selectedProduct.good_number);
 
                     let hasChanges = false;
 
-                    if (fields.price.value != p.price) {
+                    if (fields.price.value !== '' && Number(fields.price.value) !== Number(selectedProduct.price)) {
                         formData.append('price', fields.price.value);
                         hasChanges = true;
                     }
 
-                    if (fields.description.value != (p.description || '')) {
+                    if (fields.description.value !== (selectedProduct.description || '')) {
                         formData.append('description', fields.description.value);
                         hasChanges = true;
                     }
 
-                    if (fields.category.value != (p.product_category || '')) {
+                    if (fields.category.value !== (selectedProduct.product_category || '')) {
                         formData.append('category', fields.category.value);
                         hasChanges = true;
                     }
 
-                    if (fields.initialQty.value != (p.initial_inventory ?? 0)) {
+                    if (fields.initialQty.value !== '' && Number(fields.initialQty.value) !== Number(selectedProduct.initial_inventory ?? 0)) {
                         formData.append('initial_inventory', fields.initialQty.value);
+                        hasChanges = true;
+                    }
+
+                    const selectedImage = imageSelect.value;
+                    const currentImageName = (selectedProduct.image_path || '').split('/').pop();
+
+                    if (selectedImage && selectedImage !== currentImageName) {
+                        formData.append('image_path', `/static/edit_images/${selectedImage}`);
                         hasChanges = true;
                     }
 
@@ -613,34 +701,27 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
                         const data = await result.json();
 
                         if (data.success) {
-                            // REFRESH FROM DB
                             const refresh = await fetch('/Inventory_Product_editor_info_dashboaurd_btn4_');
                             const updatedProducts = await refresh.json();
-                            const updated = updatedProducts.find(x => x.good_number == p.good_number);
+                            const updatedProduct = updatedProducts.find(x => String(x.good_number) === String(selectedProduct.good_number));
 
-                            if (updated) p = updated;
+                            if (updatedProduct) {
+                                selectedProduct = { ...updatedProduct };
+                            }
 
-                            // UPDATE CARD
-                            card.querySelector('img').src = p.image_path;
-                            card.querySelector('.product-price').textContent = `$${p.price}`;
-                            card.querySelector('.product-category').textContent = p.product_category || 'Uncategorized';
-                            card.querySelector('.product-qty').textContent =
-                                `Qty: ${p.current_quantity ?? p.initial_inventory}`;
+                            const updatedImagePath = selectedProduct.image_path && selectedProduct.image_path.trim() !== ''
+                                ? selectedProduct.image_path
+                                : '/static/default.png';
 
-                            const toast = document.createElement('div');
-                            toast.textContent = `Product updated: ${p.good_name}`;
-                            toast.style = `
-                                position:fixed; bottom:20px; left:50%;
-                                transform:translateX(-50%);
-                                background:#28a745; color:#fff;
-                                padding:10px 20px; border-radius:5px;
-                            `;
-                            document.body.appendChild(toast);
-                            setTimeout(() => toast.remove(), 2000);
+                            card.querySelector('img').src = updatedImagePath;
+                            card.querySelector('.product-name').textContent = selectedProduct.good_name;
+                            card.querySelector('.product-price').textContent = `$${selectedProduct.price}`;
+                            card.querySelector('.product-category').textContent = selectedProduct.product_category || 'Uncategorized';
+                            card.querySelector('.product-qty').textContent = `Qty: ${selectedProduct.current_quantity ?? selectedProduct.initial_inventory}`;
 
                             popup.remove();
                         } else {
-                            alert(data.error);
+                            alert(data.error || 'Failed to save changes.');
                         }
                     } catch (err) {
                         alert('Error: ' + err.message);
@@ -652,6 +733,7 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
         });
     } catch (err) {
         console.error(err);
+        bigDisplay.innerHTML = `<p style="color:red;">Failed to load product editor.</p>`;
     }
 });
 
