@@ -450,13 +450,8 @@
                 });
 
             });
-       
+ 
 let productEditorClickCount = 0;
-
-function getImageSrc(path) {
-    if (!path) return '/static/placeholder.png';
-    return '/static/' + path.replace(/\\/g, '/').replace(/^static\//, '');
-}
 
 document.querySelector('.dashboard-btn4').addEventListener('click', async () => {
     const bigDisplay = document.getElementById('bigDisplay');
@@ -470,7 +465,6 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
         return;
     }
 
-    // Show display
     bigDisplay.innerHTML = '';
     bigDisplay.style.display = 'flex';
     bigDisplay.style.flexWrap = 'wrap';
@@ -481,24 +475,15 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
         const response = await fetch('/Inventory_Product_editor_info_dashboaurd_btn4_');
         const productsData = await response.json();
 
-        // Optional images fetch (kept as you wanted)
-        let availableImages = [];
-        try {
-            const imgRes = await fetch('/list_food_images');
-            availableImages = await imgRes.json();
-        } catch (err) {
-            console.warn('No server images fetched', err);
-        }
-
         productsData.forEach(p => {
             const card = document.createElement('div');
             card.classList.add('product-card');
             card.style.width = '180px';
             card.style.cursor = 'pointer';
 
+            // Just use the image_path from DB
             card.innerHTML = `
-                <img src="${getImageSrc(p.image_path)}"
-                     width="150" height="150"
+                <img src="${p.image_path}" width="150" height="150"
                      style="object-fit:cover; border-radius:6px;">
                 <div class="product-name">${p.good_name}</div>
                 <div class="product-price">$${p.price}</div>
@@ -506,7 +491,7 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
                 <div class="product-qty">Qty: ${p.current_quantity ?? p.initial_inventory}</div>
             `;
 
-            // ===== POPUP =====
+            // Popup
             card.addEventListener('click', () => {
                 const oldPopup = document.getElementById('productPopup');
                 if (oldPopup) oldPopup.remove();
@@ -519,51 +504,104 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
                     padding:20px; z-index:9999; max-width:400px; width:90%;
                 `;
 
+                // Image non-editable
                 popup.innerHTML = `
                     <button style="float:right;" onclick="this.parentElement.remove()">X</button>
                     <h3>${p.good_name}</h3>
 
-                    <img id="mainImg" src="${getImageSrc(p.image_path)}"
-                         width="200" height="200"
-                         style="object-fit:cover; border-radius:6px; display:block; margin:auto;">
+                    <div style="text-align:center; margin-bottom:10px;">
+                        <img src="${p.image_path}" width="200" height="200"
+                             style="object-fit:cover; border-radius:6px;">
+                    </div>
 
-                    <input id="editImage" type="file">
-
-                    <p>Price:
-                        <input id="editPrice" type="number" value="${p.price}">
+                    <p><strong>Price:</strong> 
+                        <span id="priceDisplay">${p.price}</span>
+                        <input id="editPrice" type="number" value="${p.price}" style="display:none;">
                     </p>
 
-                    <p>Description:
-                        <textarea id="editDesc">${p.description || ''}</textarea>
+                    <p><strong>Description:</strong> 
+                        <span id="descDisplay">${p.description || ''}</span>
+                        <textarea id="editDesc" style="display:none;">${p.description || ''}</textarea>
                     </p>
 
-                    <p>Category:
-                        <input id="editCat" value="${p.product_category || ''}">
+                    <p><strong>Category:</strong> 
+                        <span id="catDisplay">${p.product_category || ''}</span>
+                        <input id="editCat" value="${p.product_category || ''}" style="display:none;">
                     </p>
 
-                    <p>Initial Qty:
-                        <input id="editInitialQty" type="number" value="${p.initial_inventory || 0}">
+                    <p><strong>Initial Qty:</strong> 
+                        <span id="initialQtyDisplay">${p.initial_inventory || 0}</span>
+                        <input id="editInitialQty" type="number" value="${p.initial_inventory || 0}" style="display:none;">
                     </p>
 
-                    <button id="saveBtn">Save</button>
+                    <div style="display:flex; gap:10px; margin-top:15px;">
+                        <button id="editBtn">Edit</button>
+                        <button id="saveBtn">Save</button>
+                        <button id="clearBtn">Clear</button>
+                    </div>
                 `;
 
                 document.body.appendChild(popup);
 
+                const editBtn = popup.querySelector('#editBtn');
                 const saveBtn = popup.querySelector('#saveBtn');
+                const clearBtn = popup.querySelector('#clearBtn');
+
+                const fields = {
+                    price: popup.querySelector('#editPrice'),
+                    description: popup.querySelector('#editDesc'),
+                    category: popup.querySelector('#editCat'),
+                    initialQty: popup.querySelector('#editInitialQty')
+                };
+
+                let isEditing = false;
+
+                editBtn.addEventListener('click', () => {
+                    isEditing = !isEditing;
+                    Object.keys(fields).forEach(key => {
+                        fields[key].style.display = isEditing ? 'inline-block' : 'none';
+                        const displayEl = popup.querySelector(`#${key}Display`);
+                        if (displayEl) displayEl.style.display = isEditing ? 'none' : 'inline-block';
+                    });
+                });
+
+                clearBtn.addEventListener('click', () => {
+                    Object.values(fields).forEach(field => {
+                        if (field.tagName === 'INPUT' || field.tagName === 'TEXTAREA') {
+                            field.value = '';
+                        }
+                    });
+                });
 
                 saveBtn.addEventListener('click', async () => {
                     const formData = new FormData();
                     formData.append('good_number', p.good_number);
 
-                    formData.append('price', popup.querySelector('#editPrice').value);
-                    formData.append('description', popup.querySelector('#editDesc').value);
-                    formData.append('category', popup.querySelector('#editCat').value);
-                    formData.append('initial_inventory', popup.querySelector('#editInitialQty').value);
+                    let hasChanges = false;
 
-                    const fileInput = popup.querySelector('#editImage');
-                    if (fileInput.files.length > 0) {
-                        formData.append('image', fileInput.files[0]);
+                    if (fields.price.value != p.price) {
+                        formData.append('price', fields.price.value);
+                        hasChanges = true;
+                    }
+
+                    if (fields.description.value != (p.description || '')) {
+                        formData.append('description', fields.description.value);
+                        hasChanges = true;
+                    }
+
+                    if (fields.category.value != (p.product_category || '')) {
+                        formData.append('category', fields.category.value);
+                        hasChanges = true;
+                    }
+
+                    if (fields.initialQty.value != (p.initial_inventory ?? 0)) {
+                        formData.append('initial_inventory', fields.initialQty.value);
+                        hasChanges = true;
+                    }
+
+                    if (!hasChanges) {
+                        alert('No changes to save.');
+                        return;
                     }
 
                     try {
@@ -575,12 +613,20 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
                         const data = await result.json();
 
                         if (data.success) {
+                            // REFRESH FROM DB
+                            const refresh = await fetch('/Inventory_Product_editor_info_dashboaurd_btn4_');
+                            const updatedProducts = await refresh.json();
+                            const updated = updatedProducts.find(x => x.good_number == p.good_number);
 
-                            // 🔄 REFRESH UI FROM DB (real fix)
-                            document.querySelector('.dashboard-btn4').click();
-                            productEditorClickCount = 1;
+                            if (updated) p = updated;
 
-                            // ✅ TOAST
+                            // UPDATE CARD
+                            card.querySelector('img').src = p.image_path;
+                            card.querySelector('.product-price').textContent = `$${p.price}`;
+                            card.querySelector('.product-category').textContent = p.product_category || 'Uncategorized';
+                            card.querySelector('.product-qty').textContent =
+                                `Qty: ${p.current_quantity ?? p.initial_inventory}`;
+
                             const toast = document.createElement('div');
                             toast.textContent = `Product updated: ${p.good_name}`;
                             toast.style = `
@@ -593,11 +639,9 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
                             setTimeout(() => toast.remove(), 2000);
 
                             popup.remove();
-
                         } else {
                             alert(data.error);
                         }
-
                     } catch (err) {
                         alert('Error: ' + err.message);
                     }
@@ -606,7 +650,6 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
 
             bigDisplay.appendChild(card);
         });
-
     } catch (err) {
         console.error(err);
     }
