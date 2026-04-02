@@ -682,10 +682,10 @@ document.querySelector('.dashboard-btn4').addEventListener('click', async () => 
                     const selectedImage = imageSelect.value;
                     const currentImageName = (selectedProduct.image_path || '').split('/').pop();
 
-                    if (selectedImage && selectedImage !== currentImageName) {
-                        formData.append('image_path', `/static/edit_images/${selectedImage}`);
-                        hasChanges = true;
-                    }
+                    if (selectedImage) {
+    formData.append('image_path', `static/edit_images/${selectedImage}`);
+    hasChanges = true;
+}
 
                     if (!hasChanges) {
                         alert('No changes to save.');

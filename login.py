@@ -61,7 +61,7 @@ def get_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',
-        password='12345',
+        password='1234',
         database='bakery_busness'
     )
 
@@ -2571,14 +2571,13 @@ def Inventory_Product_editor_info_dashboaurd_btn4_():
 
     return jsonify(products)
 
-# ===== UPDATE PRODUCT =====
 @app.route('/update_product', methods=['POST'])
 def update_product():
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn = None
+    cursor = None
 
     try:
-        # Detect request type
+        # Handle JSON or form
         if request.content_type.startswith('multipart/form-data'):
             data = request.form
             file = request.files.get('image')
@@ -2587,85 +2586,41 @@ def update_product():
             file = None
 
         good_number = data.get('good_number')
-
         if not good_number:
             return jsonify({"success": False, "error": "Missing product ID"})
 
-        # ===== PRICE =====
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # PRICE
         if 'price' in data:
             try:
                 price = float(data['price'])
-                if price < 0:
-                    return jsonify({"success": False, "error": "Invalid price"})
-                cursor.execute(
-                    "UPDATE products SET price=%s WHERE good_number=%s",
-                    (price, good_number)
-                )
+                cursor.execute("UPDATE products SET price=%s WHERE good_number=%s", (price, good_number))
             except:
                 return jsonify({"success": False, "error": "Price must be a number"})
 
-        # ===== DESCRIPTION =====
+        # DESCRIPTION
         if 'description' in data:
-            cursor.execute(
-                "UPDATE products SET description=%s WHERE good_number=%s",
-                (data['description'], good_number)
-            )
+            cursor.execute("UPDATE products SET description=%s WHERE good_number=%s", (data['description'], good_number))
 
-        # ===== CATEGORY (UPSERT) =====
-        if 'category' in data:
-            cursor.execute(
-                "SELECT product_category_number FROM product_categories WHERE product_category_name=%s",
-                (data['category'],)
-            )
-            cat_row = cursor.fetchone()
-
-            if not cat_row:
-                return jsonify({"success": False, "error": "Category not found"})
-
-            category_number = cat_row[0]
-
-            cursor.execute("""
-                INSERT INTO products_category_table (product_number, product_category_number)
-                VALUES (%s, %s)
-                ON DUPLICATE KEY UPDATE product_category_number=%s
-            """, (good_number, category_number, category_number))
-
-        # ===== INVENTORY (UPSERT) =====
-        if 'initial_inventory' in data:
-            try:
-                qty = int(data['initial_inventory'])
-            except:
-                return jsonify({"success": False, "error": "Invalid quantity"})
-
-            cursor.execute("""
-                INSERT INTO product_stock_initial (good_number, initial_quantity, created_at)
-                VALUES (%s, %s, NOW())
-                ON DUPLICATE KEY UPDATE initial_quantity=%s, created_at=NOW()
-            """, (good_number, qty, qty))
-
-        # ===== IMAGE UPLOAD =====
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            unique_name = f"{uuid.uuid4()}_{filename}"
-            filepath = os.path.join(IMAGES_FOLDER, unique_name)
-
-            file.save(filepath)
-
-            cursor.execute(
-                "UPDATE products SET image_path=%s WHERE good_number=%s",
-                (f'image_changes/{unique_name}', good_number)
-            )
+        # IMAGE PATH (just string)
+        if 'image_path' in data:
+            cursor.execute("UPDATE products SET image_path=%s WHERE good_number=%s", (data['image_path'], good_number))
 
         conn.commit()
         return jsonify({"success": True})
 
     except Exception as e:
-        conn.rollback()
+        if conn:
+            conn.rollback()
         return jsonify({"success": False, "error": str(e)})
 
     finally:
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 # ===== LIST IMAGES =====
 @app.route('/list_food_images')
