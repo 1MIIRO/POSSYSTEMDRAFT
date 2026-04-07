@@ -19,8 +19,56 @@ CREATE DATABASE bakery_busness;
 	('john_doe2', 'Mike Jones', '12345', 'Chef'),
 	('john_doe3', 'Sara Lee', '12345', 'Waiter'),
 	('john_doe4', 'Alex Kim', '12345', 'Receptionist');
+	
+*****************************************************************************************************************************	
+	
+	CREATE TABLE USER_GROUPS (
+			USER_GROUPS_number INT AUTO_INCREMENT PRIMARY KEY,
+			USER_GROUPS_CHARACTER_ID VARCHAR(10) NOT NULL UNIQUE,
+			USER_GROUPS VARCHAR(50) NOT NULL UNIQUE
+		);
+	
+	INSERT INTO USER_GROUPS (USER_GROUPS_CHARACTER_ID, USER_GROUPS) VALUES
+		('G1', 'Administration'),
+		('G2', 'Management'),
+		('G3', 'Sales'),
+		('G4', 'Basic');
+	
+	DESCRIBE USER_GROUPS;
++--------------------------+-------------+------+-----+---------+----------------+
+| Field                    | Type        | Null | Key | Default | Extra          |
++--------------------------+-------------+------+-----+---------+----------------+
+| USER_GROUPS_number       | int         | NO   | PRI | NULL    | auto_increment |
+| USER_GROUPS_CHARACTER_ID | varchar(10) | NO   | UNI | NULL    |                |
+| USER_GROUPS              | varchar(50) | NO   | UNI | NULL    |                |
++--------------------------+-------------+------+-----+---------+----------------+
 
-*********************************************************************************
+	
+*********************************************************************************************************************************************************8
+	
+USER_WITH_GROUP  
+	
+	CREATE TABLE USER_WITH_GROUP (
+    USER_id INT NOT NULL,
+    USER_GROUPS_number INT NOT NULL,
+    assigned_datetime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (USER_id, USER_GROUPS_number),
+    FOREIGN KEY (USER_id) REFERENCES user(user_id),
+    FOREIGN KEY (USER_GROUPS_number) REFERENCES USER_GROUPS(USER_GROUPS_number)
+);
+	
+	
+	USER_WITH_GROUP;
++--------------------+----------+------+-----+-------------------+-------------------+
+| Field              | Type     | Null | Key | Default           | Extra             |
++--------------------+----------+------+-----+-------------------+-------------------+
+| USER_id            | int      | NO   | PRI | NULL              |                   |
+| USER_GROUPS_number | int      | NO   | PRI | NULL              |                   |
+| assigned_datetime  | datetime | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++--------------------+----------+------+-----+-------------------+-------------------+
+3 rows in set (0.01 sec)
+*****************************************************************************************************************************************************************
+	
  DROP TABLE products;
  
 products
