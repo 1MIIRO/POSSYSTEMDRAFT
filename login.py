@@ -2183,6 +2183,126 @@ def save_table_reservation():
         cursor.close()
         conn.close()
 
+# GET: Show Admin Employees page
+@app.route('/admin_employee', methods=['GET'])
+def admin_employee():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Get employees with groups
+        cursor.execute("""
+            SELECT u.user_id, u.user_name, u.personal_name, u.job_desc,
+                   g.USER_GROUPS
+            FROM user u
+            LEFT JOIN user_with_group uwg ON u.user_id = uwg.USER_id
+            LEFT JOIN user_groups g ON uwg.USER_GROUPS_number = g.USER_GROUPS_number
+        """)
+        employees = cursor.fetchall()
+
+        # Get all groups for dropdown
+        cursor.execute("SELECT USER_GROUPS_number, USER_GROUPS FROM user_groups")
+        groups = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return render_template('admin_employee.html', employees=employees, groups=groups, user={"personal_name":"Admin User","job_desc":"Administrator"})
+
+    except Exception as e:
+        print("ERROR:", e)
+        return "Database error", 500
+
+# POST: Add employee and assign groups
+@app.route('/add_employee', methods=['POST'])
+def add_employee():
+    try:
+        data = request.json
+        username = data.get('user_name')
+        personal_name = data.get('personal_name')
+        user_password = data.get('user_password')
+        job_desc = data.get('job_desc')
+        group_ids = data.get('group_ids', [])
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # Insert into user table
+        cursor.execute("""
+            INSERT INTO user (user_name, personal_name, user_password, job_desc)
+            VALUES (%s, %s, %s, %s)
+        """, (username, personal_name, user_password, job_desc))
+        user_id = cursor.lastrowid
+
+        # Insert selected groups
+        for gid in group_ids:
+            cursor.execute("""
+                INSERT INTO user_with_group (USER_id, USER_GROUPS_number, assigned_datetime)
+                VALUES (%s, %s, %s)
+            """, (user_id, gid, datetime.now()))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True})
+
+    except Exception as e:
+        print("ERROR:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Fetch all groups for dropdown
+        cursor.execute("SELECT USER_GROUPS_number, USER_GROUPS_CHARACTER_ID, USER_GROUPS FROM user_groups")
+        groups = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+        return render_template('admin_employee.html', groups=groups)
+
+    except Exception as e:
+        print("ERROR:", e)
+        return "Database error", 500
+
+
+    try:
+        data = request.json
+        username = data.get('user_name')
+        personal_name = data.get('personal_name')
+        user_password = data.get('user_password')
+        job_desc = data.get('job_desc')
+        group_ids = data.get('group_ids', [])
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # Insert into user table
+        cursor.execute("""
+            INSERT INTO user (user_name, personal_name, user_password, job_desc)
+            VALUES (%s, %s, %s, %s)
+        """, (username, personal_name, user_password, job_desc))
+        user_id = cursor.lastrowid
+
+        # Insert into user_with_group
+        for gid in group_ids:
+            cursor.execute("""
+                INSERT INTO user_with_group (USER_id, USER_GROUPS_number, assigned_datetime)
+                VALUES (%s, %s, %s)
+            """, (user_id, gid, datetime.now()))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True})
+
+    except Exception as e:
+        print("ERROR:", e)
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/update_reservation_status', methods=['POST'])
 def update_reservation_status():
     if 'user_id' not in session:
