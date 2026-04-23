@@ -11,6 +11,8 @@ import mysql.connector
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from werkzeug.security import generate_password_hash # Add this at the top of app.py
+from datetime import datetime
 import os
 import os
 import uuid
@@ -2244,7 +2246,6 @@ def admin_employee():
         print("ERROR:", e)
         return "Database error", 500
   
-  
 @app.route('/get_user_activity')
 def get_user_activity():
     try:
@@ -2277,6 +2278,62 @@ def get_user_activity():
     except Exception as e:
         print("ERROR:", e)
         return jsonify({"activities": []}), 500
+
+@app.route('/add_employee', methods=['POST'])
+def add_employee():
+    data = request.json
+    
+    # 1. Extract raw data from your Frontend
+    username = data.get('username')
+    personal_name = data.get('personal_name')
+    raw_password = str(data.get('user_password'))
+    job_desc = data.get('job_desc')
+    group_ids = data.get('group_ids', [])
+
+    # 2. THE ENCRYPTION (This is the critical step)
+    # This turns '12345' into a secure hash string
+    hashed_password = generate_password_hash(raw_password)
+
+    try:
+        # 3. Save to the 'user' table
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        user_query = """
+            INSERT INTO user (user_name, personal_name, user_password, job_desc) 
+            VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(user_query, (username, personal_name, hashed_password, job_desc))
+        
+        # Get the ID of the user we just created
+        new_user_id = cursor.lastrowid
+
+        # 4. Handle 'user_with_group' (if you are using that table for permissions)
+        for g_id in group_ids:
+            cursor.execute(
+                "INSERT INTO user_with_group (user_id, group_number) VALUES (%s, %s)",
+                (new_user_id, g_id)
+            )
+
+        conn.commit()
+        return jsonify({"success": True})
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"success": False, "error": str(e)})
+    finally:
+        cursor.close()
+        conn.close()
+
+
+
+
+
+
+
+
+
+
 
 
 # POST: Add employee and assign groups
