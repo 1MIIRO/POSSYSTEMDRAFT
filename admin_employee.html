@@ -107,309 +107,163 @@
     </div>
 
     <!-- SCRIPT -->
-    <script>
-    // DATE & TIME
-            function updateDateTime() {
-            const now = new Date();
-            document.getElementById('dateText').textContent = now.toLocaleDateString();
-            document.getElementById('timeText').textContent = now.toLocaleTimeString();
-        }
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-
-        // ELEMENTS
-        const orderToggle = document.getElementById('orderToggle');
-        const sidebar = document.getElementById('sidebar');
-        const orderContainer = document.getElementById('orderContainer');
-        const menuToggle = document.getElementById('menuToggle');
-        const buttonsContainer = document.getElementById('buttonsContainer');
-        const searchContainer = document.getElementById('searchContainer');
-        const bigDisplay = document.getElementById('bigDisplay');
-        const buttons = document.querySelectorAll('.dashboard-btn');
-        const topBarItems = document.querySelectorAll('.top-bar-item');
-        let tempOrderItems = [];
-
-        // SHIFT FUNCTION
-        function shiftUI(shiftSidebar, shiftOrder) {
-            if (shiftSidebar) {
-                buttonsContainer.classList.add('shifted-left');
-                searchContainer.classList.add('shifted-left');
-                topBarItems.forEach(el => el.classList.add('shifted-left-time'));
-            } else {
-                buttonsContainer.classList.remove('shifted-left');
-                searchContainer.classList.remove('shifted-left');
-                topBarItems.forEach(el => el.classList.remove('shifted-left-time'));
-            }
-
-            if (shiftOrder) {
-                buttonsContainer.classList.add('shifted-right');
-                searchContainer.classList.add('shifted-right');
-                productDisplay.classList.add('shifted-right');
-                topBarItems.forEach(el => el.classList.add('shifted-right-time'));
-            } else {
-                buttonsContainer.classList.remove('shifted-right');
-                searchContainer.classList.remove('shifted-right');
-                productDisplay.classList.remove('shifted-right');
-                topBarItems.forEach(el => el.classList.remove('shifted-right-time'));
-            }
-
-            if (shiftSidebar || shiftOrder) {
-                buttons.forEach(btn => btn.style.flex = '0 1 auto');
-            } else {
-                buttons.forEach(btn => btn.style.flex = '1');
-            }
-        }
-
-        // SIDEBAR TOGGLE
-        menuToggle.addEventListener('click', function() {
-            orderContainer.classList.remove("active"); 
-            orderToggle.textContent = "Open Order";
-            orderToggle.classList.remove("close-order");
-            orderToggle.classList.add("open-order");
-
-            sidebar.classList.toggle('active');
-            shiftUI(sidebar.classList.contains('active'), false);
-        });
+   <style>
+    /* UPGRADE: Use a wrapper to handle shifting via CSS instead of heavy JS manipulation */
+    body[data-sidebar="open"] .buttons-container,
+    body[data-sidebar="open"] .search-container { margin-left: 200px; transition: 0.3s; }
     
-        // ORDER TOGGLE
-        orderToggle.addEventListener('click', () => {
-            if (orderToggle.textContent === "Open Order") {
-                orderContainer.classList.add("active");
-                orderToggle.textContent = "Close Order";
-                orderToggle.classList.remove("open-order");
-                orderToggle.classList.add("close-order");
+    body[data-order="open"] .buttons-container,
+    body[data-order="open"] .search-container,
+    body[data-order="open"] .big-display { margin-right: 25%; transition: 0.3s; }
 
-                sidebar.classList.remove('active');
-                shiftUI(false, true);
-            } else {
-                orderContainer.classList.remove("active");
-                orderToggle.textContent = "Open Order";
-                orderToggle.classList.remove("close-order");
-                orderToggle.classList.add("open-order");
+    .big-display { min-height: 400px; padding: 20px; }
+    .hidden { display: none !important; }
+</style>
 
-                shiftUI(false, false);
-
-               
-          // ===== RESET DISPLAY SCREEN 1 =====
-        orderItems.innerHTML = "";  // clears all selected products
-
-        // ===== RESET TEMP JSON =====
-        tempOrderItems = [];
-
-        // ===== RESET SUBTOTAL =====
-        document.querySelector('.subtotal-amount').textContent = '$0.00';
-            }
-        });
-
-        // CLOSE SIDEBAR ON CLICK
-        sidebar.addEventListener('click', function () {
-            sidebar.classList.remove('active');
-            shiftUI(false, false);
-        });
-
-         // Track button click state
-        let adminadduser=0;
-
-        document.querySelector('.dashboard-btn1').addEventListener('click', () => {
-                const bigDisplay = document.getElementById('bigDisplay');
-
-                // Increment counter
-                adminadduser++;
-
-                // Triple-click hides everything
-                if (adminadduser === 3) {
-                    bigDisplay.innerHTML = '';
-                    bigDisplay.style.display = 'none';
-                    adminadduser = 0;
-                    return;
-                }
-
-
-                bigDisplay.innerHTML = `
-                <div id="addInventoryWrapper">
-					<!-- CONTENT AREA -->
-					<div class="content" id="content">
-						<div class="form-container">
-							<h1>Add New Employee</h1>
-
-							<!-- Username -->
-							<div class="form-group">
-								<label>Username:</label>
-								<div class="button-group">
-									<input id="username" placeholder="Enter username">
-									<button onclick="saveField('username')" class="btn-save">Save</button>
-								</div>
-							</div>
-
-							<!-- Personal Name -->
-							<div class="form-group">
-								<label>Personal Name:</label>
-								<div class="button-group">
-									<input id="personal_name" placeholder="Enter personal name">
-									<button onclick="saveField('personal_name')" class="btn-save">Save</button>
-								</div>
-							</div>
-
-							<!-- Password -->
-							<div class="form-group">
-								<label>Password:</label>
-								<div class="button-group">
-									<input id="user_password" type="password" placeholder="Enter password">
-									<button onclick="saveField('user_password')" class="btn-save">Save</button>
-								</div>
-							</div>
-
-							<!-- Job Description -->
-							<div class="form-group">
-								<label>Job Desc:</label>
-								<div class="button-group">
-									<input id="job_desc" placeholder="Enter job description">
-									<button onclick="saveField('job_desc')" class="btn-save">Save</button>
-								</div>
-							</div>
-
-							<!-- User Groups -->
-							<div class="form-group">
-								<label>User Groups:</label>
-								<select id="groups" multiple>
-									{% for group in groups %}
-									<option value="{{ group.USER_GROUPS_number }}">{{ group.USER_GROUPS }}</option>
-									{% endfor %}
-								</select>
-								<button onclick="saveGroups()" class="btn-save" style="width: 100%; margin-top: 10px;">Save Groups</button>
-							</div>
-
-							<!-- Submit Button -->
-							<button class="submit-btn" onclick="submitAll()">Submit Employee</button>
-						</div>
-					</div>
-
-                `;
-
-                bigDisplay.style.display = 'block';
-                   // EMPLOYEE FORM LOGIC
+<script>
+    // --- GLOBAL STATE & ELEMENTS ---
+    const bigDisplay = document.getElementById('bigDisplay');
+    const orderToggle = document.getElementById('orderToggle');
+    const sidebar = document.getElementById('sidebar');
+    const orderContainer = document.getElementById('orderContainer');
+    
+    // TEMPORARY DATA STORE (SITS OUTSIDE LISTENERS)
     let tempData = {};
     let tempGroups = [];
+    let clickCounts = { admin: 0, product: 0 };
 
-    function saveField(fieldId) {
-        tempData[fieldId] = document.getElementById(fieldId).value;
-        alert(fieldId + " saved temporarily.");
+    // --- DATE & TIME ---
+    function updateDateTime() {
+        const now = new Date();
+        document.getElementById('dateText').textContent = now.toLocaleDateString();
+        document.getElementById('timeText').textContent = now.toLocaleTimeString();
+    }
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    // --- UI CONTROL (UPGRADES: Data-Attribute Logic) ---
+    function toggleUI(type, isOpen) {
+        if (type === 'sidebar') {
+            document.body.setAttribute('data-sidebar', isOpen ? 'open' : 'closed');
+            if (isOpen) toggleUI('order', false); // Auto-close order if sidebar opens
+        } else {
+            document.body.setAttribute('data-order', isOpen ? 'open' : 'closed');
+            if (isOpen) toggleUI('sidebar', false); // Auto-close sidebar if order opens
+        }
     }
 
-    function saveGroups() {
-        tempGroups = Array.from(document.getElementById("groups").selectedOptions).map(o => o.value);
-        alert("Groups saved temporarily: " + tempGroups.join(", "));
-    }
+    // --- EVENT LISTENERS ---
+    document.getElementById('menuToggle').addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+        toggleUI('sidebar', sidebar.classList.contains('active'));
+    });
 
-    function submitAll() {
-        if (!tempData.username || !tempData.personal_name || !tempData.user_password || !tempData.job_desc) {
-            alert("Please fill and save all fields before submitting.");
+    orderToggle.addEventListener('click', () => {
+        const isActive = orderContainer.classList.toggle('active');
+        orderToggle.textContent = isActive ? "Close Order" : "Open Order";
+        toggleUI('order', isActive);
+        
+        if (!isActive) {
+            // "solve an era": Fixed missing element reference check
+            const subtotal = document.querySelector('.subtotal-amount');
+            if(subtotal) subtotal.textContent = '$0.00';
+            tempData = {}; 
+        }
+    });
+
+    // --- ADMIN ACTIONS (Add Employee) ---
+    document.querySelector('.dashboard-btn1').addEventListener('click', () => {
+        clickCounts.admin++;
+        if (clickCounts.admin === 3) {
+            bigDisplay.classList.add('hidden');
+            clickCounts.admin = 0;
             return;
         }
 
-        fetch('/add_employee', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                user_name: tempData.username,
-                personal_name: tempData.personal_name,
-                user_password: tempData.user_password,
-                job_desc: tempData.job_desc,
-                group_ids: tempGroups
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success){
-                alert("Employee added successfully!");
-                location.reload();
-            } else {
-                alert("Error: " + data.error);
-            }
-        })
-        .catch(err => alert("Request failed: " + err));
-    }
-
-            });
-       
-        document.querySelector('.dashboard-btn3').addEventListener('click', () => {
-
-                const bigDisplay = document.getElementById('bigDisplay');
-                bigDisplay.innerHTML = '';
-                bigDisplay.style.display = 'block';
-
-                const table = document.createElement('table');
-                table.classList.add('table', 'table-bordered');
-                table.style.width = '100%';
-
-        
-            });
- 
-        let productEditorClickCount = 0;
-
-        document.querySelector('.dashboard-btn4').addEventListener('click', async () => {
-            const bigDisplay = document.getElementById('bigDisplay');
-            productEditorClickCount++;
-
-            // Double-click clears display
-            if (productEditorClickCount === 2) {
-                bigDisplay.innerHTML = '';
-                bigDisplay.style.display = 'none';
-                productEditorClickCount = 0;
-                return;
-            }
-
-            bigDisplay.innerHTML = '';
-            bigDisplay.style.display = 'flex';
-            bigDisplay.style.flexWrap = 'wrap';
-            bigDisplay.style.justifyContent = 'center';
-            bigDisplay.style.gap = '15px';
-
-        });
-
-       document.querySelector('.dashboard-btn2').addEventListener('click', async () => {
-    const bigDisplay = document.getElementById('bigDisplay');
-
-    bigDisplay.style.display = 'block';
-    bigDisplay.innerHTML = 'Loading...';
-
-    const res = await fetch('/get_user_activity');
-    const data = await res.json();
-
-    let html = `
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>User ID</th>
-                    <th>Name</th>
-                    <th>Username</th>
-                    <th>Logins</th>
-                    <th>First Login</th>
-                    <th>Last Login</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
-    data.activities.forEach(r => {
-        html += `
-            <tr>
-                <td>${r.user_id ?? ''}</td>
-                <td>${r.name ?? ''}</td>
-                <td>${r.username ?? ''}</td>
-                <td>${r.login_count ?? 0}</td>
-                <td>${r.first_login ?? ''}</td>
-                <td>${r.last_login ?? ''}</td>
-            </tr>
-        `;
+        bigDisplay.classList.remove('hidden');
+        bigDisplay.innerHTML = `
+            <div class="form-container p-4 border rounded bg-light">
+                <h2 class="mb-4">Add New Employee</h2>
+                ${['username', 'personal_name', 'user_password', 'job_desc'].map(field => `
+                    <div class="mb-3">
+                        <label class="form-label">${field.replace('_', ' ').toUpperCase()}:</label>
+                        <div class="input-group">
+                            <input id="${field}" type="${field === 'user_password' ? 'password' : 'text'}" class="form-control" placeholder="Enter ${field}">
+                            <button onclick="saveField('${field}')" class="btn btn-outline-primary">Save</button>
+                        </div>
+                    </div>
+                `).join('')}
+                <div class="mb-3">
+                    <label class="form-label">User Groups:</label>
+                    <select id="groups" class="form-select" multiple>
+                        {% for group in groups %}
+                        <option value="{{ group.USER_GROUPS_number }}">{{ group.USER_GROUPS }}</option>
+                        {% endfor %}
+                    </select>
+                    <button onclick="saveGroups()" class="btn btn-outline-secondary w-100 mt-2">Lock Groups</button>
+                </div>
+                <button class="btn btn-success w-100 mt-3" onclick="submitAll()">Submit Employee</button>
+            </div>`;
     });
 
-    html += `</tbody></table>`;
+    // --- FORM LOGIC (Global Scope) ---
+    window.saveField = (id) => {
+        const val = document.getElementById(id).value;
+        if(!val) return alert("Field cannot be empty");
+        tempData[id] = val;
+        console.log(`${id} cached`);
+    };
 
-    bigDisplay.innerHTML = html;
-});
+    window.saveGroups = () => {
+        const select = document.getElementById("groups");
+        tempGroups = Array.from(select.selectedOptions).map(o => o.value);
+        alert("Groups locked.");
+    };
 
-    </script>
+    window.submitAll = async () => {
+        const required = ['username', 'personal_name', 'user_password', 'job_desc'];
+        if (!required.every(key => tempData[key])) return alert("Save all fields first!");
 
+        try {
+            const res = await fetch('/add_employee', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ...tempData, group_ids: tempGroups })
+            });
+            const data = await res.json();
+            if(data.success) location.reload();
+            else alert("Error: " + data.error);
+        } catch (err) { alert("Network Error"); }
+    };
+
+    // --- ACTIVITY TABLE ---
+    document.querySelector('.dashboard-btn2').addEventListener('click', async () => {
+        bigDisplay.classList.remove('hidden');
+        bigDisplay.innerHTML = '<div class="spinner-border text-primary"></div>';
+
+        const res = await fetch('/get_user_activity');
+        const data = await res.json();
+
+        let rows = data.activities.map(r => {
+            let status = 'inactive';
+            if (r.last_login) {
+                const diff = (new Date() - new Date(r.last_login)) / (1000 * 60 * 60 * 24);
+                if (diff <= 7) status = '<span class="badge bg-success">Active</span>';
+                else status = '<span class="badge bg-secondary">Inactive</span>';
+            }
+            return `<tr>
+                <td>${r.user_id || ''}</td>
+                <td>${r.name || ''}</td>
+                <td>${r.username || ''}</td>
+                <td>${r.login_count || 0}</td>
+                <td>${status}</td>
+            </tr>`;
+        }).join('');
+
+        bigDisplay.innerHTML = `<table class="table table-hover mt-3">
+            <thead class="table-dark"><tr><th>ID</th><th>Name</th><th>User</th><th>Logins</th><th>Status</th></tr></thead>
+            <tbody>${rows}</tbody></table>`;
+    });
+</script>
 </body>
 </html>
