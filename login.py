@@ -16,7 +16,6 @@ from datetime import datetime
 import os
 import os
 import uuid
-
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
@@ -64,9 +63,11 @@ def get_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',
-        password='1234',
+        password='12345',
         database='bakery_busness'
     )
+
+
 
 login_page_html = """
 <!DOCTYPE html>
@@ -128,109 +129,123 @@ loginForm.addEventListener('submit', async (e) => {
 def login_page():
     return render_template_string(login_page_html)
 
+from flask import request, jsonify, session
+from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime
+
 @app.route('/login', methods=['POST'])
 def login():
-    username = request.form.get('username')
-    password = request.form.get('password')
+    username = (request.form.get('username') or "").strip()
+    password = (request.form.get('password') or "").strip()
+
+    if not username or not password:
+        return jsonify({"success": False, "error": "Missing credentials"})
 
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # 1️⃣ Get user by username ONLY
-    cursor.execute("SELECT * FROM `user` WHERE user_name=%s", (username,))
-    user = cursor.fetchone()
+    try:
+        # 1️⃣ Get user
+        cursor.execute("SELECT * FROM `user` WHERE user_name=%s", (username,))
+        user = cursor.fetchone()
 
-    if user:
-        stored_password = user['user_password']
+        if not user:
+            return jsonify({"success": False})
+
+        stored_password = str(user['user_password']).strip()
+
+        # 🔑 Normalize input (remove .00 if user typed it)
+        clean_input_password = password.replace('.00', '')
+
         password_ok = False
 
-        # 2️⃣ Check if already hashed
-        if stored_password.startswith('pbkdf2:') or stored_password.startswith('scrypt:'):
-            password_ok = check_password_hash(stored_password, password)
+        # 2️⃣ Case A: hashed password
+        if stored_password.startswith(('pbkdf2:', 'scrypt:')):
+            password_ok = check_password_hash(stored_password, clean_input_password)
 
+        # 3️⃣ Case B: legacy plain/decimal password
         else:
-            # 3️⃣ Plain text fallback (OLD USERS)
-            if stored_password == password:
+            # normalize stored too
+            stored_clean = stored_password.replace('.00', '')
+
+            if stored_clean == clean_input_password:
                 password_ok = True
 
-                # 🔐 MIGRATE: hash and update immediately
-                new_hash = generate_password_hash(password)
+                # 🔐 MIGRATE to hashed
+                new_hash = generate_password_hash(clean_input_password)
                 cursor.execute("""
                     UPDATE user SET user_password=%s WHERE user_id=%s
                 """, (new_hash, user['user_id']))
                 conn.commit()
 
-        if password_ok:
+        if not password_ok:
+            return jsonify({"success": False})
 
-            # 4️⃣ Save session
-            session['user_id'] = user['user_id']
-            session['user_name'] = user['user_name']
-            session['personal_name'] = user['personal_name']
-            session['job_desc'] = user['job_desc']
+        # ✅ SESSION
+        session['user_id'] = user['user_id']
+        session['user_name'] = user['user_name']
+        session['personal_name'] = user['personal_name']
+        session['job_desc'] = user['job_desc']
 
-            # 5️⃣ Get Description_audit_id for "LOG-IN"
-            cursor.execute("""
-                SELECT description_audit_id 
-                FROM Description_audit 
-                WHERE Description_Title = %s
-            """, ("LOG-IN",))
-            desc_row = cursor.fetchone()
+        # 🔎 Get LOG-IN description ID
+        cursor.execute("""
+            SELECT description_audit_id 
+            FROM Description_audit 
+            WHERE Description_Title = %s
+        """, ("LOG-IN",))
+        desc_row = cursor.fetchone()
 
-            if not desc_row:
-                cursor.close()
-                conn.close()
-                return jsonify({"success": False, "error": "LOG-IN description not found"})
+        if not desc_row:
+            return jsonify({"success": False, "error": "LOG-IN description not found"})
 
-            description_audit_id = desc_row['description_audit_id']
+        description_audit_id = desc_row['description_audit_id']
 
-            # 6️⃣ Date & time
-            now = datetime.now()
-            audit_date = now.date()
-            audit_time = now.time().replace(microsecond=0)
+        # ⏱ Date & time
+        now = datetime.now()
+        audit_date = now.date()
+        audit_time = now.time().replace(microsecond=0)
 
-            # 7️⃣ Insert Audit_Logs (TEMP)
-            cursor.execute("""
-                INSERT INTO Audit_Logs 
-                (audit_reference_number, action, audit_date, audit_time, done_by)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (
-                "TEMP",
-                "",
-                audit_date,
-                audit_time,
-                f"{session['user_id']}---{session['personal_name']}---{session['user_name']}"
-            ))
-            conn.commit()
+        # 📝 Insert audit log
+        cursor.execute("""
+            INSERT INTO Audit_Logs 
+            (audit_reference_number, action, audit_date, audit_time, done_by)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            "TEMP",
+            "",
+            audit_date,
+            audit_time,
+            f"{session['user_id']}---{session['personal_name']}---{session['user_name']}"
+        ))
+        conn.commit()
 
-            audit_ID = cursor.lastrowid
+        audit_ID = cursor.lastrowid
 
-            # 8️⃣ Generate reference
-            audit_reference_number = f"#{audit_ID}.{session['user_id']}.{description_audit_id}"
+        # 🔢 Generate reference
+        audit_reference_number = f"#{audit_ID}.{session['user_id']}.{description_audit_id}"
 
-            # 9️⃣ Update Audit_Logs
-            action_text = f"Login into the system successful done by {session['user_id']}, {session['job_desc']}"
-            cursor.execute("""
-                UPDATE Audit_Logs
-                SET audit_reference_number=%s, action=%s
-                WHERE audit_ID=%s
-            """, (audit_reference_number, action_text, audit_ID))
-            conn.commit()
+        # ✏️ Update audit log
+        action_text = f"Login successful by {session['user_id']}, {session['job_desc']}"
+        cursor.execute("""
+            UPDATE Audit_Logs
+            SET audit_reference_number=%s, action=%s
+            WHERE audit_ID=%s
+        """, (audit_reference_number, action_text, audit_ID))
+        conn.commit()
 
-            # 🔟 Insert audit_desc
-            cursor.execute("""
-                INSERT INTO audit_desc (audit_ID, description_audit_id)
-                VALUES (%s, %s)
-            """, (audit_ID, description_audit_id))
-            conn.commit()
+        # 🔗 Link audit description
+        cursor.execute("""
+            INSERT INTO audit_desc (audit_ID, description_audit_id)
+            VALUES (%s, %s)
+        """, (audit_ID, description_audit_id))
+        conn.commit()
 
-            cursor.close()
-            conn.close()
+        return jsonify({"success": True})
 
-            return jsonify({"success": True})
+    finally:
+        cursor.close()
+        conn.close()
 
-    cursor.close()
-    conn.close()
-    return jsonify({"success": False})
 
 def insert_into_order_table(order_number):
     """
