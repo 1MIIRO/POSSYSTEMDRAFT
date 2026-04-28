@@ -16,8 +16,9 @@ from datetime import datetime
 import os
 import os
 import uuid
-from werkzeug.utils import secure_filename
 
+from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = 'supersecretkey' 
 
@@ -129,26 +130,52 @@ def login_page():
 
 @app.route('/login', methods=['POST'])
 def login():
-        username = request.form.get('username')
-        password = request.form.get('password')
+    username = request.form.get('username')
+    password = request.form.get('password')
 
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
 
-        # 1️⃣ Check user credentials
-        cursor.execute("SELECT * FROM `user` WHERE user_name=%s AND user_password=%s", (username, password))
-        user = cursor.fetchone()
+    # 1️⃣ Get user by username ONLY
+    cursor.execute("SELECT * FROM `user` WHERE user_name=%s", (username,))
+    user = cursor.fetchone()
 
-        if user:
-            # 2️⃣ Save user session
+    if user:
+        stored_password = user['user_password']
+        password_ok = False
+
+        # 2️⃣ Check if already hashed
+        if stored_password.startswith('pbkdf2:') or stored_password.startswith('scrypt:'):
+            password_ok = check_password_hash(stored_password, password)
+
+        else:
+            # 3️⃣ Plain text fallback (OLD USERS)
+            if stored_password == password:
+                password_ok = True
+
+                # 🔐 MIGRATE: hash and update immediately
+                new_hash = generate_password_hash(password)
+                cursor.execute("""
+                    UPDATE user SET user_password=%s WHERE user_id=%s
+                """, (new_hash, user['user_id']))
+                conn.commit()
+
+        if password_ok:
+
+            # 4️⃣ Save session
             session['user_id'] = user['user_id']
             session['user_name'] = user['user_name']
             session['personal_name'] = user['personal_name']
             session['job_desc'] = user['job_desc']
 
-            # 3️⃣ Get Description_audit_id for "LOG-IN"
-            cursor.execute("SELECT description_audit_id FROM Description_audit WHERE Description_Title = %s", ("LOG-IN",))
+            # 5️⃣ Get Description_audit_id for "LOG-IN"
+            cursor.execute("""
+                SELECT description_audit_id 
+                FROM Description_audit 
+                WHERE Description_Title = %s
+            """, ("LOG-IN",))
             desc_row = cursor.fetchone()
+
             if not desc_row:
                 cursor.close()
                 conn.close()
@@ -156,23 +183,31 @@ def login():
 
             description_audit_id = desc_row['description_audit_id']
 
-            # 4️⃣ Get current date and time
+            # 6️⃣ Date & time
             now = datetime.now()
             audit_date = now.date()
             audit_time = now.time().replace(microsecond=0)
 
-            # 5️⃣ Insert into Audit_Logs (temporary reference number first)
+            # 7️⃣ Insert Audit_Logs (TEMP)
             cursor.execute("""
-                INSERT INTO Audit_Logs (audit_reference_number, action, audit_date, audit_time, done_by)
+                INSERT INTO Audit_Logs 
+                (audit_reference_number, action, audit_date, audit_time, done_by)
                 VALUES (%s, %s, %s, %s, %s)
-            """, ("TEMP", "", audit_date, audit_time, f"{session['user_id']}---{session['personal_name']}---{session['user_name']}"))
+            """, (
+                "TEMP",
+                "",
+                audit_date,
+                audit_time,
+                f"{session['user_id']}---{session['personal_name']}---{session['user_name']}"
+            ))
             conn.commit()
+
             audit_ID = cursor.lastrowid
 
-            # 6️⃣ Generate audit_reference_number as "#audit_ID.user_id.activity_number"
+            # 8️⃣ Generate reference
             audit_reference_number = f"#{audit_ID}.{session['user_id']}.{description_audit_id}"
 
-            # 7️⃣ Update Audit_Logs with actual reference number and action
+            # 9️⃣ Update Audit_Logs
             action_text = f"Login into the system successful done by {session['user_id']}, {session['job_desc']}"
             cursor.execute("""
                 UPDATE Audit_Logs
@@ -181,7 +216,7 @@ def login():
             """, (audit_reference_number, action_text, audit_ID))
             conn.commit()
 
-            # 8️⃣ Insert into audit_desc table
+            # 🔟 Insert audit_desc
             cursor.execute("""
                 INSERT INTO audit_desc (audit_ID, description_audit_id)
                 VALUES (%s, %s)
@@ -193,10 +228,9 @@ def login():
 
             return jsonify({"success": True})
 
-        cursor.close()
-        conn.close()
-
-        return jsonify({"success": False})
+    cursor.close()
+    conn.close()
+    return jsonify({"success": False})
 
 def insert_into_order_table(order_number):
     """
@@ -2279,63 +2313,6 @@ def get_user_activity():
         print("ERROR:", e)
         return jsonify({"activities": []}), 500
 
-@app.route('/add_employee', methods=['POST'])
-def add_employee():
-    data = request.json
-    
-    # 1. Extract raw data from your Frontend
-    username = data.get('username')
-    personal_name = data.get('personal_name')
-    raw_password = str(data.get('user_password'))
-    job_desc = data.get('job_desc')
-    group_ids = data.get('group_ids', [])
-
-    # 2. THE ENCRYPTION (This is the critical step)
-    # This turns '12345' into a secure hash string
-    hashed_password = generate_password_hash(raw_password)
-
-    try:
-        # 3. Save to the 'user' table
-        conn = get_connection()
-        cursor = conn.cursor()
-        
-        user_query = """
-            INSERT INTO user (user_name, personal_name, user_password, job_desc) 
-            VALUES (%s, %s, %s, %s)
-        """
-        cursor.execute(user_query, (username, personal_name, hashed_password, job_desc))
-        
-        # Get the ID of the user we just created
-        new_user_id = cursor.lastrowid
-
-        # 4. Handle 'user_with_group' (if you are using that table for permissions)
-        for g_id in group_ids:
-            cursor.execute(
-                "INSERT INTO user_with_group (user_id, group_number) VALUES (%s, %s)",
-                (new_user_id, g_id)
-            )
-
-        conn.commit()
-        return jsonify({"success": True})
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"success": False, "error": str(e)})
-    finally:
-        cursor.close()
-        conn.close()
-
-
-
-
-
-
-
-
-
-
-
-
 # POST: Add employee and assign groups
 @app.route('/add_employee', methods=['POST'])
 def add_employee():
@@ -2806,7 +2783,7 @@ def update_product():
 
     except Exception as e:
         if conn:
-            conn.rollback()
+            conn.rollback() 
         return jsonify({"success": False, "error": str(e)})
 
     finally:
