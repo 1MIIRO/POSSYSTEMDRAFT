@@ -63,12 +63,10 @@ def get_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',
-        password='12345',
+        password='1234',
         database='bakery_busness'
     )
-
-
-
+  
 login_page_html = """
 <!DOCTYPE html>
 <html lang="en">
@@ -245,7 +243,6 @@ def login():
     finally:
         cursor.close()
         conn.close()
-
 
 def insert_into_order_table(order_number):
     """
