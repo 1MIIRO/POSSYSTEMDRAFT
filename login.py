@@ -130,6 +130,21 @@ def login_page():
 from flask import request, jsonify, session
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
+import base64
+import os
+import json
+from datetime import datetime
+from flask import request, jsonify, session
+from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime
+import random
+import string
+import json
+from flask import request, jsonify, session
+from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime
+import random
+import string
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -151,8 +166,6 @@ def login():
             return jsonify({"success": False})
 
         stored_password = str(user['user_password']).strip()
-
-        # 🔑 Normalize input (remove .00 if user typed it)
         clean_input_password = password.replace('.00', '')
 
         password_ok = False
@@ -163,13 +176,11 @@ def login():
 
         # 3️⃣ Case B: legacy plain/decimal password
         else:
-            # normalize stored too
             stored_clean = stored_password.replace('.00', '')
 
             if stored_clean == clean_input_password:
                 password_ok = True
 
-                # 🔐 MIGRATE to hashed
                 new_hash = generate_password_hash(clean_input_password)
                 cursor.execute("""
                     UPDATE user SET user_password=%s WHERE user_id=%s
@@ -179,7 +190,7 @@ def login():
         if not password_ok:
             return jsonify({"success": False})
 
-        # ✅ SESSION
+        # ✅ SESSION (UNCHANGED)
         session['user_id'] = user['user_id']
         session['user_name'] = user['user_name']
         session['personal_name'] = user['personal_name']
@@ -238,7 +249,39 @@ def login():
         """, (audit_ID, description_audit_id))
         conn.commit()
 
-        return jsonify({"success": True})
+        # =========================
+        # 🔐 ACCESS TOKEN (ADDED ONLY)
+        # =========================
+
+        # get user group id
+        cursor.execute("""
+            SELECT USER_GROUPS_number 
+            FROM user_with_group 
+            WHERE USER_id = %s
+        """, (user['user_id'],))
+        group_row = cursor.fetchone()
+
+        user_groups_ID = group_row['USER_GROUPS_number'] if group_row else None
+
+        # session snapshot (your design)
+        session_data = f"{session['user_id']}--{session['user_name']}--{session['personal_name']}--{session['job_desc']}"
+
+        # datetime
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # random 6 chars
+        rand = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+
+        # FINAL TOKEN FORMAT (your structure)
+        access_token = f"#{user_groups_ID}--{session_data}--{current_time}--{rand}"
+
+        # store in session only (NO DB CHANGES)
+        session['access_token'] = access_token
+
+        return jsonify({
+            "success": True,
+            "access_token": access_token
+        })
 
     finally:
         cursor.close()
