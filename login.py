@@ -145,80 +145,149 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 import random
 import string
+from cryptography.fernet import Fernet
+from datetime import timedelta
+
+FERNET_KEY = b'K3e0loKVV68JQjsKeqXhifPj9j9XJSu62YYCTiw-ez8='
+
+cipher = Fernet(FERNET_KEY)
 
 @app.route('/login', methods=['POST'])
 def login():
+
     username = (request.form.get('username') or "").strip()
     password = (request.form.get('password') or "").strip()
 
     if not username or not password:
-        return jsonify({"success": False, "error": "Missing credentials"})
+        return jsonify({
+            "success": False,
+            "error": "Missing credentials"
+        })
 
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # 1️⃣ Get user
-        cursor.execute("SELECT * FROM `user` WHERE user_name=%s", (username,))
+
+        # =========================
+        # GET USER
+        # =========================
+
+        cursor.execute("""
+            SELECT * 
+            FROM user 
+            WHERE user_name = %s
+        """, (username,))
+
         user = cursor.fetchone()
 
         if not user:
-            return jsonify({"success": False})
+            return jsonify({
+                "success": False
+            })
 
         stored_password = str(user['user_password']).strip()
         clean_input_password = password.replace('.00', '')
 
         password_ok = False
 
-        # 2️⃣ Case A: hashed password
-        if stored_password.startswith(('pbkdf2:', 'scrypt:')):
-            password_ok = check_password_hash(stored_password, clean_input_password)
+        # =========================
+        # HASHED PASSWORD
+        # =========================
 
-        # 3️⃣ Case B: legacy plain/decimal password
+        if stored_password.startswith(('pbkdf2:', 'scrypt:')):
+
+            password_ok = check_password_hash(
+                stored_password,
+                clean_input_password
+            )
+
+        # =========================
+        # LEGACY PASSWORD
+        # =========================
+
         else:
+
             stored_clean = stored_password.replace('.00', '')
 
             if stored_clean == clean_input_password:
+
                 password_ok = True
 
+                # auto upgrade old password to hash
                 new_hash = generate_password_hash(clean_input_password)
+
                 cursor.execute("""
-                    UPDATE user SET user_password=%s WHERE user_id=%s
-                """, (new_hash, user['user_id']))
+                    UPDATE user
+                    SET user_password = %s
+                    WHERE user_id = %s
+                """, (
+                    new_hash,
+                    user['user_id']
+                ))
+
                 conn.commit()
 
-        if not password_ok:
-            return jsonify({"success": False})
+        # =========================
+        # WRONG PASSWORD
+        # =========================
 
-        # ✅ SESSION (UNCHANGED)
+        if not password_ok:
+            return jsonify({
+                "success": False
+            })
+
+        # =========================
+        # SESSION
+        # =========================
+
         session['user_id'] = user['user_id']
         session['user_name'] = user['user_name']
         session['personal_name'] = user['personal_name']
         session['job_desc'] = user['job_desc']
 
-        # 🔎 Get LOG-IN description ID
+        # =========================
+        # AUDIT DESCRIPTION
+        # =========================
+
         cursor.execute("""
-            SELECT description_audit_id 
-            FROM Description_audit 
+            SELECT description_audit_id
+            FROM Description_audit
             WHERE Description_Title = %s
         """, ("LOG-IN",))
+
         desc_row = cursor.fetchone()
 
         if not desc_row:
-            return jsonify({"success": False, "error": "LOG-IN description not found"})
+            return jsonify({
+                "success": False,
+                "error": "LOG-IN description not found"
+            })
 
         description_audit_id = desc_row['description_audit_id']
 
-        # ⏱ Date & time
+        # =========================
+        # AUDIT LOG
+        # =========================
+
         now = datetime.now()
+
         audit_date = now.date()
         audit_time = now.time().replace(microsecond=0)
 
-        # 📝 Insert audit log
         cursor.execute("""
-            INSERT INTO Audit_Logs 
-            (audit_reference_number, action, audit_date, audit_time, done_by)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO Audit_Logs
+            (
+                audit_reference_number,
+                action,
+                audit_date,
+                audit_time,
+                done_by
+            )
+            VALUES
+            (
+                %s,%s,%s,%s,%s
+            )
         """, (
             "TEMP",
             "",
@@ -226,66 +295,287 @@ def login():
             audit_time,
             f"{session['user_id']}---{session['personal_name']}---{session['user_name']}"
         ))
+
         conn.commit()
 
         audit_ID = cursor.lastrowid
 
-        # 🔢 Generate reference
         audit_reference_number = f"#{audit_ID}.{session['user_id']}.{description_audit_id}"
 
-        # ✏️ Update audit log
         action_text = f"Login successful by {session['user_id']}, {session['job_desc']}"
+
         cursor.execute("""
             UPDATE Audit_Logs
-            SET audit_reference_number=%s, action=%s
-            WHERE audit_ID=%s
-        """, (audit_reference_number, action_text, audit_ID))
-        conn.commit()
+            SET
+                audit_reference_number = %s,
+                action = %s
+            WHERE audit_ID = %s
+        """, (
+            audit_reference_number,
+            action_text,
+            audit_ID
+        ))
 
-        # 🔗 Link audit description
-        cursor.execute("""
-            INSERT INTO audit_desc (audit_ID, description_audit_id)
-            VALUES (%s, %s)
-        """, (audit_ID, description_audit_id))
         conn.commit()
 
         # =========================
-        # 🔐 ACCESS TOKEN (ADDED ONLY)
+        # LINK AUDIT DESCRIPTION
         # =========================
 
-        # get user group id
         cursor.execute("""
-            SELECT USER_GROUPS_number 
-            FROM user_with_group 
+            INSERT INTO audit_desc
+            (
+                audit_ID,
+                description_audit_id
+            )
+            VALUES
+            (
+                %s,%s
+            )
+        """, (
+            audit_ID,
+            description_audit_id
+        ))
+
+        conn.commit()
+
+        # =========================
+        # 🔐 ACCESS TOKEN
+        # =========================
+
+        cursor.execute("""
+            SELECT USER_GROUPS_number
+            FROM user_with_group
             WHERE USER_id = %s
         """, (user['user_id'],))
+
         group_row = cursor.fetchone()
 
-        user_groups_ID = group_row['USER_GROUPS_number'] if group_row else None
+        user_groups_ID = group_row['USER_GROUPS_number'] if group_row else "NONE"
 
-        # session snapshot (your design)
-        session_data = f"{session['user_id']}--{session['user_name']}--{session['personal_name']}--{session['job_desc']}"
+        # your token structure
+        session_data = (
+            f"{session['user_id']}--"
+            f"{session['user_name']}--"
+            f"{session['personal_name']}--"
+            f"{session['job_desc']}"
+        )
 
-        # datetime
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # login time
+        login_time = datetime.now()
 
-        # random 6 chars
-        rand = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+        # expiry
+        expiry_time = login_time + timedelta(hours=8)
 
-        # FINAL TOKEN FORMAT (your structure)
-        access_token = f"#{user_groups_ID}--{session_data}--{current_time}--{rand}"
+        # random characters
+        rand = ''.join(
+            random.choices(
+                string.ascii_letters + string.digits,
+                k=6
+            )
+        )
 
-        # store in session only (NO DB CHANGES)
+        # raw token
+        raw_token = (
+            f"#{user_groups_ID}--"
+            f"{session_data}--"
+            f"{login_time.strftime('%Y-%m-%d %H:%M:%S')}--"
+            f"{rand}"
+        )
+
+        # encrypted token
+        access_token = cipher.encrypt(
+            raw_token.encode()
+        ).decode()
+
+        # store session token
         session['access_token'] = access_token
+
+        # =========================
+        # SAVE TOKEN TO DATABASE
+        # =========================
+
+        cursor.execute("""
+            INSERT INTO user_access_tokens
+            (
+                user_id,
+                user_groups_character_id,
+                token,
+                is_active,
+                created_at,
+                expires_at
+            )
+            VALUES
+            (
+                %s,%s,%s,%s,%s,%s
+            )
+        """, (
+            user['user_id'],
+            str(user_groups_ID),
+            access_token,
+            1,
+            login_time,
+            expiry_time
+        ))
+
+        conn.commit()
+
+        # =========================
+        # SUCCESS RESPONSE
+        # =========================
 
         return jsonify({
             "success": True,
-            "access_token": access_token
+            "access_token": access_token,
+            "expires_at": expiry_time.strftime('%Y-%m-%d %H:%M:%S')
         })
 
     finally:
+
         cursor.close()
         conn.close()
+
+# =========================================================
+# TOKEN + GROUP CHECK
+# =========================================================
+
+def check_token():
+
+    access_token = session.get('access_token')
+
+    # -----------------------------------------
+    # NO TOKEN
+    # -----------------------------------------
+
+    if not access_token:
+        return None
+
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # -----------------------------------------
+        # TOKEN EXISTS
+        # -----------------------------------------
+
+        cursor.execute("""
+            SELECT *
+            FROM user_access_tokens
+            WHERE token = %s
+        """, (access_token,))
+
+        token_row = cursor.fetchone()
+
+        if not token_row:
+            return None
+
+        # -----------------------------------------
+        # TOKEN ACTIVE
+        # -----------------------------------------
+
+        if token_row['is_active'] != 1:
+            return None
+
+        # -----------------------------------------
+        # TOKEN EXPIRED
+        # -----------------------------------------
+
+        expires_at = token_row['expires_at']
+
+        if expires_at:
+
+            if datetime.now() > expires_at:
+
+                cursor.execute("""
+                    UPDATE user_access_tokens
+                    SET is_active = 0
+                    WHERE token_id = %s
+                """, (token_row['token_id'],))
+
+                conn.commit()
+
+                return None
+
+        # -----------------------------------------
+        # DECRYPT TOKEN
+        # -----------------------------------------
+
+        try:
+
+            decrypted = cipher.decrypt(
+                access_token.encode()
+            ).decode()
+
+        except Exception:
+            return None
+
+        # -----------------------------------------
+        # TOKEN FORMAT
+        # #G1--session_data--time--random
+        # -----------------------------------------
+
+        token_parts = decrypted.split("--")
+
+        if len(token_parts) < 1:
+            return None
+
+        # -----------------------------------------
+        # GET GROUP
+        # -----------------------------------------
+
+        user_group = token_parts[0].replace("#", "").strip()
+
+        # -----------------------------------------
+        # RETURN USER ACCESS DATA
+        # -----------------------------------------
+
+        return {
+            "user_id": token_row['user_id'],
+            "group": user_group,
+            "token": access_token
+        }
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+
+# =========================================================
+# LOGOUT
+# =========================================================
+
+@app.route('/logout')
+def logout():
+
+    access_token = session.get('access_token')
+
+    if access_token:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        try:
+
+            cursor.execute("""
+                UPDATE user_access_tokens
+                SET is_active = 0
+                WHERE token = %s
+            """, (access_token,))
+
+            conn.commit()
+
+        finally:
+
+            cursor.close()
+            conn.close()
+
+    session.clear()
+
+    return redirect(url_for('login_page'))
+
+
 
 def insert_into_order_table(order_number):
     """
@@ -2860,3 +3150,7 @@ if __name__ == "__main__":
   
  app.run(debug=False)
  
+
+
+
+
