@@ -204,22 +204,85 @@
 
     </div>
 
-
     <!-- USER PROFILE POPUP -->
-    <div id="userProfileModal">
+<div id="userProfileModal">
 
-        <div id="userProfileCard">
+    <div id="userProfileCard">
 
-            <!-- CLOSE BUTTON -->
-            <span id="closeUserProfileModal">&times;</span>
+        <!-- CLOSE BUTTON -->
+        <span id="closeUserProfileModal">&times;</span>
 
-            <!-- HEADER -->
-            <div class="user-profile-header">
-                <h2>User Profile</h2>
+        <!-- HEADER -->
+        <div class="user-profile-header">
+            <h2>User Profile</h2>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div id="userProfileLayout">
+
+            <!-- LEFT SIDE -->
+            <div id="User_info_display">
+
+                <table id="userInfoTable">
+
+                    <tr>
+                        <td class="label-cell">Personal Name</td>
+                        <td class="value-cell"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="label-cell">Password</td>
+                        <td class="value-cell"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="label-cell">Job Description</td>
+                        <td class="value-cell"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="label-cell">Group ID</td>
+                        <td class="value-cell"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="label-cell">Token</td>
+                        <td class="value-cell"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="label-cell">Is Active</td>
+                        <td class="value-cell"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="label-cell">Created At</td>
+                        <td class="value-cell"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="label-cell">Expires At</td>
+                        <td class="value-cell"></td>
+                    </tr>
+
+                </table>
+
             </div>
 
-            <!-- EMPTY CONTENT -->
-            <div id="userProfileContent">
+            <!-- RIGHT SIDE -->
+            <div id="buttons_container">
+
+                <div class="button_box">
+                    <button class="profile-btn">Save</button>
+                </div>
+
+                <div class="button_box">
+                    <button class="profile-btn">edit</button>
+                </div>
+
+                <div class="button_box">
+                    <button class="profile-btn">clear</button>
+                </div>
 
             </div>
 
@@ -227,12 +290,17 @@
 
     </div>
 
+</div>
 
 
 
 
 
 
+
+
+
+    
     <!-- TOP BAR -->
     <div class="top-bar d-flex align-items-center">
         <div id="menuToggle" class="menu-icon">&#9776;</div>
@@ -1013,9 +1081,7 @@
         // Fetch a new order number on page load
         fetchNewOrderNumber();
 
-        // USER PROFILE ELEMENTS
-
-const userProfileButton =
+       const userProfileButton =
 document.getElementById('userProfileButton');
 
 const userProfileModal =
@@ -1025,7 +1091,7 @@ const closeUserProfileModal =
 document.getElementById('closeUserProfileModal');
 
 
-// OPEN MODAL
+// OPEN
 
 userProfileButton.addEventListener('click', function(e){
 
@@ -1035,7 +1101,7 @@ userProfileButton.addEventListener('click', function(e){
 });
 
 
-// CLOSE MODAL
+// CLOSE BUTTON
 
 closeUserProfileModal.addEventListener('click', function(){
 
@@ -1043,7 +1109,7 @@ closeUserProfileModal.addEventListener('click', function(){
 });
 
 
-// CLOSE ON OUTSIDE CLICK
+// OUTSIDE CLICK
 
 userProfileModal.addEventListener('click', function(e){
 

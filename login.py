@@ -18,6 +18,7 @@ import os
 import uuid
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
+
 app = Flask(__name__)
 app.secret_key = 'supersecretkey' 
 
@@ -541,8 +542,7 @@ def check_token():
         cursor.close()
         conn.close()
 
-
-# =========================================================
+# ==============i===========================================
 # LOGOUT
 # =========================================================
 
@@ -574,8 +574,6 @@ def logout():
     session.clear()
 
     return redirect(url_for('login_page'))
-
-
 
 def insert_into_order_table(order_number):
     """
@@ -612,6 +610,60 @@ DB_CONFIG = {
 }
 
 OUTPUT_FILE = "order-history.json"
+
+@app.route("/get_user_profile", methods=["GET"])
+def get_user_profile():
+
+    user_id = session["user_id"]
+
+    connection = get_connection()
+
+    cursor = connection.cursor(dictionary=True)
+
+    query = """
+        SELECT
+
+            u.personal_name,
+            u.user_name,
+            u.user_password,
+            u.job_desc,
+
+            ug.user_groups_character_id,
+            ug.USER_GROUPS,
+
+            uwg.assigned_datetime,
+
+            uat.token,
+            uat.is_active,
+            uat.created_at,
+            uat.expires_at
+
+        FROM `user` u
+
+        INNER JOIN user_with_group uwg
+            ON u.user_id = uwg.USER_id
+
+        INNER JOIN user_groups ug
+            ON uwg.USER_GROUPS_number = ug.USER_GROUPS_number
+
+        LEFT JOIN user_access_tokens uat
+            ON uat.token_id = (
+                SELECT MAX(token_id)
+                FROM user_access_tokens
+                WHERE user_id = u.user_id
+            )
+
+        WHERE u.user_id = %s
+    """
+
+    cursor.execute(query, (user_id,))
+
+    user_data = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    return jsonify(user_data)
 
 @app.route("/export_orders", methods=["GET"])
 def export_orders_route():
@@ -902,6 +954,7 @@ def filter_orders_route():
         "total_results": len(filtered_orders),
         "output_file": OUTPUT_FILE
     }), 200
+
 
 @app.route('/description', methods=['GET', 'POST'])
 def description_page():
@@ -3150,7 +3203,4 @@ if __name__ == "__main__":
   
  app.run(debug=False)
  
-
-
-
 

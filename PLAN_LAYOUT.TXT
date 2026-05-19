@@ -1,181 +1,106 @@
-USER TABLE 
-+---------------+---------------+------+-----+---------+----------------+
-| Field         | Type          | Null | Key | Default | Extra          |
-+---------------+---------------+------+-----+---------+----------------+
-| user_id       | int           | NO   | PRI | NULL    | auto_increment |
-| user_name     | varchar(255)  | NO   |     | NULL    |                |
-| personal_name | varchar(255)  | NO   |     | NULL    |                |
-| user_password | decimal(10,2) | NO   |     | NULL    |                |
-| job_desc      | varchar(255)  | NO   |     | NULL    |                |
-+---------------+---------------+------+-----+---------+----------------+
 
-1.	
-
-2.	- USER- frequency-STATUS
-	    {.("'Active', 'In_active' ,blocked , 'Reset' ")}
-		  this is to track user activity 
-
-3.  -User-password-encryption 
-          user_password  encryption  and  decryption 
-          this is nessecary  to addsecurity 
-
-4.  -Usr access tokens 
-        this you will  help with how this will run best way to run tho
-
-5.  -User-profile_page  
-        they show user info
-        allow user to edit thier  info 
+mysql> DESCRIBE user;
++---------------+--------------+------+-----+---------+----------------+
+| Field         | Type         | Null | Key | Default | Extra          |
++---------------+--------------+------+-----+---------+----------------+
+| user_id       | int          | NO   | PRI | NULL    | auto_increment | {not display )
+| user_name     | varchar(255) | NO   |     | NULL    |                |
+| personal_name | varchar(255) | NO   |     | NULL    |                |
+| user_password | varchar(255) | NO   |     | NULL    |                | (hash it make it visible when user clicks edit_btn
+| job_desc      | varchar(255) | NO   |     | NULL    |                |
++---------------+--------------+------+-----+---------+----------------+
+5 rows in set (0.04 sec)
 
 
-
-
-    <!-- SIDEBAR -->
-    <div id="sidebar" class="sidebar">
-        <div class="p-3">
-            <h5>{{ user.personal_name }}</h5>
-            <p>{{ user.job_desc }}</p>
-        </div>
-        <ul class="list-unstyled ps-3">
-            <li>
-                <a href="{{ url_for('dashboard') }}">Point_of_sales</a>
-            </li>
-            <li>
-                <a href="{{ url_for('activity_billing_queue') }}">Activity</a>
-            </li>
-            <li>
-                <a href="{{ url_for('audit_logs') }}">Audit logs</a>
-            </li>
-            <li>
-                <a href="{{ url_for('product_inventory') }}">Inventory</a>
-            </li>
-            <li><a href="#">Teams</a></li>
-            <li><a href="#">Settings</a></li>
-        </ul>
-    </div>
-
-add a button    Add_User 
- 
-
-SHOW TABLES ;
-+-----------------------------+
-| Tables_in_bakery_busness    |
-+-----------------------------+                 
-| user                        |
-| user_groups                 |
-| user_with_group             |
-+-----------------------------+
-
-
-mysql> describe user;
-+---------------+---------------+------+-----+---------+----------------+
-| Field         | Type          | Null | Key | Default | Extra          |
-+---------------+---------------+------+-----+---------+----------------+
-| user_id       | int           | NO   | PRI | NULL    | auto_increment |
-| user_name     | varchar(255)  | NO   |     | NULL    |                |
-| personal_name | varchar(255)  | NO   |     | NULL    |                |
-| user_password | decimal(10,2) | NO   |     | NULL    |                |
-| job_desc      | varchar(255)  | NO   |     | NULL    |                |
-+---------------+---------------+------+-----+---------+----------------+
-5 rows in set (0.00 sec)
-
-mysql> describe user_groups;
+mysql> DESCRIBE user_groups;
 +--------------------------+-------------+------+-----+---------+----------------+
 | Field                    | Type        | Null | Key | Default | Extra          |
 +--------------------------+-------------+------+-----+---------+----------------+
-| USER_GROUPS_number       | int         | NO   | PRI | NULL    | auto_increment |
-| USER_GROUPS_CHARACTER_ID | varchar(10) | NO   | UNI | NULL    |                |
+| USER_GROUPS_number       | int         | NO   | PRI | NULL    | auto_increment | (not display )
+| user_groups_character_id | varchar(50) | YES  | UNI | NA      |                |( I think i know you  this is done using  jion user_with_group; user to get matching  user_groups_character_id
 | USER_GROUPS              | varchar(50) | NO   | UNI | NULL    |                |
 +--------------------------+-------------+------+-----+---------+----------------+
 3 rows in set (0.01 sec)
 
-mysql> describe user_with_group;
+
+mysql> DESCRIBE user_with_group;
 +--------------------+----------+------+-----+-------------------+-------------------+
 | Field              | Type     | Null | Key | Default           | Extra             |
 +--------------------+----------+------+-----+-------------------+-------------------+
-| USER_id            | int      | NO   | PRI | NULL              |                   |
+| USER_id            | int      | NO   | PRI | NULL              |                   | (not display )
 | USER_GROUPS_number | int      | NO   | PRI | NULL              |                   |
-| assigned_datetime  | datetime | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
-+--------------------+----------+------+-----+-------------------+-----------
-
-
-.ADMIN_ADD+_USER
-
-
-[ Input " add place_ holder " enter username"]
-[ Input " add place_ holder " enter personal_name "]
-[ Input " add place_ holder " enter user_password "]
-[ Input " add place_ holder " enter personal_name "]
-
- 
-
-SHOW TABLES ;
-+-----------------------------+
-| Tables_in_bakery_busness    |
-+-----------------------------+                 
-| user                        |
-| user_groups                 |
-| user_with_group             |
-+-----------------------------+
-
-
-mysql> describe user;
-+---------------+---------------+------+-----+---------+----------------+
-| Field         | Type          | Null | Key | Default | Extra          |
-+---------------+---------------+------+-----+---------+----------------+
-| user_id       | int           | NO   | PRI | NULL    | auto_increment |
-| user_name     | varchar(255)  | NO   |     | NULL    |                |
-| personal_name | varchar(255)  | NO   |     | NULL    |                |
-| user_password | decimal(10,2) | NO   |     | NULL    |                |
-| job_desc      | varchar(255)  | NO   |     | NULL    |                |
-+---------------+---------------+------+-----+---------+----------------+
-5 rows in set (0.00 sec)
-
-mysql> describe user_groups;
-+--------------------------+-------------+------+-----+---------+----------------+
-| Field                    | Type        | Null | Key | Default | Extra          |
-+--------------------------+-------------+------+-----+---------+----------------+
-| USER_GROUPS_number       | int         | NO   | PRI | NULL    | auto_increment |
-| USER_GROUPS_CHARACTER_ID | varchar(10) | NO   | UNI | NULL    |                |
-| USER_GROUPS              | varchar(50) | NO   | UNI | NULL    |                |
-+--------------------------+-------------+------+-----+---------+----------------+
-3 rows in set (0.01 sec)
-
-mysql> describe user_with_group;
+| assigned_datetime  | datetime | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED | (I think i know you  this is done using  jion user_with_group; user to get matching  user_groups_character_id
 +--------------------+----------+------+-----+-------------------+-------------------+
-| Field              | Type     | Null | Key | Default           | Extra             |
-+--------------------+----------+------+-----+-------------------+-------------------+
-| USER_id            | int      | NO   | PRI | NULL              |                   |
-| USER_GROUPS_number | int      | NO   | PRI | NULL              |                   |
-| assigned_datetime  | datetime | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
-+--------------------+----------+------+-----+-------------------+-----------
+3 rows in set (0.00 sec)
 
 
 
 
 
 
+mysql> describe user_access_tokens;
++--------------------------+--------------+------+-----+-------------------+-------------------+
+| Field                    | Type         | Null | Key | Default           | Extra             |
++--------------------------+--------------+------+-----+-------------------+-------------------+
+| token_id                 | int          | NO   | PRI | NULL              | auto_increment    |(not display )
+| user_id                  | int          | NO   | MUL | NULL              |                   |(not display )
+| user_groups_character_id | varchar(10)  | NO   |     | NULL              |                   |
+| token                    | varchar(255) | NO   | MUL | NULL              |                   |
+| is_active                | tinyint(1)   | YES  |     | 1                 |                   |
+| created_at               | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| expires_at               | datetime     | YES  |     | NULL              |                   |
++--------------------------+--------------+------+-----+-------------------+-------------------+
+7 rows in set (0.00 sec)
 
 
 
 
 
 
++---------------------------------------------------------------+----------+
+| USER PROFILE                                                  |   {x}    |
++---------------------------------------------------------------+----------+
+|                                                               | {"Save"} |
+| Personal Name   :  .........................                  |          |
+| Password        :  .........................                  +----------+
+| Job Description :  .........................                  | {"edit"} |
+| UNIT            :  .........................                  |          |
+| Token           :  .........................                  +----------+
+| Is Active       :  .........................                  | {"clear"}|
+| Created At      :  .........................                  |          |
+| Expires At      :  .........................                  |          |
+|                                                               |          |
++---------------------------------------------------------------+----------+
+
+
+ USER PROFILE  {Keep  the text " USER PROFILE "  under this below  add below (user. user_name) }
+
+ Personal Name: {  user .personal_name}  
+
+ Password : {user . user_password}
+
+ Job Description { user .job_desc }
+
+ Unit { user_groups .user_groups_character_id \ user_groups .USER_GROUPS }
+
+
+ Token :
+
+Created At : 
+
+ Expires At :
+
+
+{the buttons we will work on at }
 
 
 
 
 
+user_groups .user_groups_character_id
 
 
-
-
-
-
-
-
-
-
-
+user_groups .USER_GROUPS
 
 
 
