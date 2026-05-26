@@ -542,7 +542,7 @@ def check_token():
         cursor.close()
         conn.close()
 
-# ==============i===========================================
+# =========================================================
 # LOGOUT
 # =========================================================
 
@@ -3138,6 +3138,71 @@ def Inventory_Product_editor_info_dashboaurd_btn4_():
     conn.close()
 
     return jsonify(products)
+
+@app.route('/get_USER_DATA', methods=['GET'])
+def get_USER_DATA():
+
+    try:
+
+        user_id = session.get('user_id')
+
+        if not user_id:
+
+            return jsonify({
+                "error": "User not logged in"
+            }), 401
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+
+            SELECT
+
+                user.personal_name,
+                user.user_password,
+                user.job_desc,
+
+                user_groups.user_groups_character_id,
+                user_groups.USER_GROUPS,
+
+                user_access_tokens.created_at,
+                user_access_tokens.expires_at
+
+            FROM user
+
+            LEFT JOIN user_with_group
+                ON user.user_id =
+                   user_with_group.USER_id
+
+            LEFT JOIN user_groups
+                ON user_with_group.USER_GROUPS_number =
+                   user_groups.USER_GROUPS_number
+
+            LEFT JOIN user_access_tokens
+                ON user.user_id =
+                   user_access_tokens.user_id
+
+            WHERE user.user_id = %s
+
+            LIMIT 1
+
+        """, (user_id,))
+
+        USER_INFO = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify(USER_INFO)
+
+    except Exception as e:
+
+        print("ERROR:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 @app.route('/update_product', methods=['POST'])
 def update_product():
