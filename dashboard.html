@@ -203,8 +203,8 @@
         </div>
 
     </div>
+<!-- USER PROFILE POPUP -->
 
-    <!-- USER PROFILE POPUP -->
 <div id="userProfileModal">
 
     <div id="userProfileCard">
@@ -214,7 +214,9 @@
 
         <!-- HEADER -->
         <div class="user-profile-header">
-            <h2>User Profile</h2>
+
+            <h2>USER PROFILE</h2>
+
         </div>
 
         <!-- MAIN CONTENT -->
@@ -227,42 +229,32 @@
 
                     <tr>
                         <td class="label-cell">Personal Name</td>
-                        <td class="value-cell"></td>
+                        <td class="value-cell" id="personal_name"></td>
                     </tr>
 
                     <tr>
                         <td class="label-cell">Password</td>
-                        <td class="value-cell"></td>
+                        <td class="value-cell" id="user_password"></td>
                     </tr>
 
                     <tr>
                         <td class="label-cell">Job Description</td>
-                        <td class="value-cell"></td>
+                        <td class="value-cell" id="job_desc"></td>
                     </tr>
 
                     <tr>
-                        <td class="label-cell">Group ID</td>
-                        <td class="value-cell"></td>
-                    </tr>
-
-                    <tr>
-                        <td class="label-cell">Token</td>
-                        <td class="value-cell"></td>
-                    </tr>
-
-                    <tr>
-                        <td class="label-cell">Is Active</td>
-                        <td class="value-cell"></td>
+                        <td class="label-cell">Group of user</td>
+                        <td class="value-cell" id="group_id"></td>
                     </tr>
 
                     <tr>
                         <td class="label-cell">Created At</td>
-                        <td class="value-cell"></td>
+                        <td class="value-cell" id="created_at"></td>
                     </tr>
 
                     <tr>
                         <td class="label-cell">Expires At</td>
-                        <td class="value-cell"></td>
+                        <td class="value-cell" id="expires_at"></td>
                     </tr>
 
                 </table>
@@ -292,15 +284,6 @@
 
 </div>
 
-
-
-
-
-
-
-
-
-    
     <!-- TOP BAR -->
     <div class="top-bar d-flex align-items-center">
         <div id="menuToggle" class="menu-icon">&#9776;</div>
@@ -331,7 +314,7 @@
             <img src="{{ url_for('static', filename='images/menu_icon.png') }}" alt="All Menu" class="btn-icon"> ALL_Menu
         </button>
     </div>
-
+                                                                            
     <!-- SEARCH BAR -->
     <div id="searchContainer" class="search-container mt-3">
         <div class="input-group">
@@ -690,7 +673,7 @@
         const modalCategory = document.getElementById('modalCategory');
         const modalName = document.getElementById('modalName');
         const modalDescription = document.getElementById('modalDescription');
-        const modalPrice = document.getElementById('modalPrice');
+        const modalPrice = document.getElementById('modalPrice'); 
         const qtyCounter = document.getElementById('qtyCounter');
         const decreaseQty = document.getElementById('decreaseQty');
         const increaseQty = document.getElementById('increaseQty');
@@ -1081,7 +1064,7 @@
         // Fetch a new order number on page load
         fetchNewOrderNumber();
 
-       const userProfileButton =
+   const userProfileButton =
 document.getElementById('userProfileButton');
 
 const userProfileModal =
@@ -1091,35 +1074,100 @@ const closeUserProfileModal =
 document.getElementById('closeUserProfileModal');
 
 
-// OPEN
+// LOAD USER DATA
 
-userProfileButton.addEventListener('click', function(e){
+async function loadUserProfile(){
+
+    try{
+
+        const response =
+        await fetch('/get_USER_DATA');
+
+        const user =
+        await response.json();
+
+        document.getElementById(
+            'personal_name'
+        ).textContent =
+        user.personal_name || '';
+
+        document.getElementById(
+            'user_password'
+        ).textContent =
+        '********';
+
+        document.getElementById(
+            'job_desc'
+        ).textContent =
+        user.job_desc || '';
+
+        document.getElementById(
+            'group_id'
+        ).textContent =
+
+        `${user.user_groups_character_id || ''}
+         / ${user.USER_GROUPS || ''}`;
+
+        document.getElementById(
+            'created_at'
+        ).textContent =
+        user.created_at || '';
+
+        document.getElementById(
+            'expires_at'
+        ).textContent =
+        user.expires_at || '';
+
+    }catch(error){
+
+        console.error(
+            'FAILED TO LOAD USER DATA:',
+            error
+        );
+    }
+}
+
+
+// OPEN MODAL
+
+userProfileButton.addEventListener(
+'click',
+
+async function(e){
 
     e.preventDefault();
 
     userProfileModal.style.display = 'flex';
+
+    await loadUserProfile();
+
 });
 
 
 // CLOSE BUTTON
 
-closeUserProfileModal.addEventListener('click', function(){
+closeUserProfileModal.addEventListener(
+'click',
+
+function(){
 
     userProfileModal.style.display = 'none';
+
 });
 
 
 // OUTSIDE CLICK
 
-userProfileModal.addEventListener('click', function(e){
+userProfileModal.addEventListener(
+'click',
+
+function(e){
 
     if(e.target === userProfileModal){
 
         userProfileModal.style.display = 'none';
     }
 });
-
-
 
     </script>
 
