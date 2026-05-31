@@ -64,7 +64,7 @@ def get_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',
-        password='1234',
+        password='12345',
         database='bakery_busness'
     )
   
@@ -3268,4 +3268,3 @@ if __name__ == "__main__":
   
  app.run(debug=False)
  
-

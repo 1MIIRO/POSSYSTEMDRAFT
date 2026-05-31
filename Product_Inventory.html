@@ -72,30 +72,34 @@
     </style>
 </head>
 <body>
-
-            <!-- SIDEBAR -->
-    <div id="sidebar" class="sidebar">
-            <div class="p-3">
-                <h5>{{ user.personal_name }}</h5>
-                <p>{{ user.job_desc }}</p>
-            </div>
-            <ul class="list-unstyled ps-3">
-                <li>
-                    <a href="{{ url_for('dashboard') }}">Point_of_sales</a>
-                </li>
-                <li>
-                    <a href="{{ url_for('activity_billing_queue') }}">Activity</a>
-                </li>
-                <li>
-                    <a href="{{ url_for('audit_logs') }}">Audit logs</a>
-                </li>
-                <li>
-                    <a href="{{ url_for('product_inventory') }}">Inventory</a>
-                </li>
-                <li><a href="#">Teams</a></li>
-                <li><a href="#">Settings</a></li>
-            </ul>
+    
+    <!-- SIDEBAR -->
+<div id="sidebar" class="sidebar">
+    <div class="p-3">
+        <h5>{{ user.personal_name }}</h5>
+        <p>{{ user.job_desc }}</p>
     </div>
+    <ul class="list-unstyled ps-3">
+        <li>
+            <a href="{{ url_for('dashboard') }}">Point_of_sales</a>
+        </li>
+        <li>
+            <a href="{{ url_for('activity_billing_queue') }}">Activity</a>
+        </li>
+        <li>
+            <a href="{{ url_for('audit_logs') }}">Audit logs</a>
+        </li>
+        <li>
+            <a href="{{ url_for('product_inventory') }}">Inventory</a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin_employee') }}">Admin Employees</a> <!-- NEW LINK -->
+        </li>
+        <li><a href="#">Teams</a></li>
+        <li><a href="#">Settings</a></li>
+    </ul>
+</div>
+
 
     <!-- ORDER PANEL -->
     <div id="orderContainer" class="order-container">
