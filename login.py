@@ -64,7 +64,7 @@ def get_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',
-        password='12345',
+        password='1234',
         database='bakery_busness'
     )
   
@@ -545,7 +545,6 @@ def check_token():
 # =========================================================
 # LOGOUT
 # =========================================================
-
 @app.route('/logout')
 def logout():
 
@@ -574,6 +573,7 @@ def logout():
     session.clear()
 
     return redirect(url_for('login_page'))
+
 
 def insert_into_order_table(order_number):
     """
@@ -954,7 +954,6 @@ def filter_orders_route():
         "total_results": len(filtered_orders),
         "output_file": OUTPUT_FILE
     }), 200
-
 
 @app.route('/description', methods=['GET', 'POST'])
 def description_page():
