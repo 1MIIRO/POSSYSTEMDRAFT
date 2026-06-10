@@ -72,7 +72,7 @@
 </head>
 <body>
 
-   <!-- SIDEBAR -->
+<!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
     <div class="p-3">
         <h5>{{ user.personal_name }}</h5>
@@ -96,10 +96,14 @@
         </li>
         <li><a href="#" id="userProfileButton">User Profile</a></li>
         <li><a href="#">Settings</a></li>
+        <div class="sidebar-footer">
+             <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+
     </ul>
 </div>
 
-    <!-- ORDER PANEL -->
+<!-- ORDER PANEL -->
     <div id="orderContainer" class="order-container">
         <div class="order-top-bar" style="display:flex; align-items:center; gap:10px;">
             <!-- Left notepad button -->
@@ -202,10 +206,10 @@
 
         </div>
 
-    </div>
-<!-- USER PROFILE POPUP -->
+</div>
 
-<div id="userProfileModal" style="display:none;">
+<!-- USER PROFILE POPUP -->
+<div id="userProfileModal">
 
     <div id="userProfileCard">
 
@@ -284,7 +288,7 @@
 
 </div>
 
-    <!-- TOP BAR -->
+<!-- TOP BAR -->
     <div class="top-bar d-flex align-items-center">
         <div id="menuToggle" class="menu-icon">&#9776;</div>
         <div class="date-box ms-3 top-bar-item">
@@ -308,7 +312,7 @@
     </div>
 
     <!-- BUTTON CONTAINER -->
-     <div id="buttonsContainer" class="buttons-container">
+<div id="buttonsContainer" class="buttons-container">
         <!-- Keep ALL_Menu button static -->
        <button class="dashboard-btn" data-category-name="ALL">
             <img src="{{ url_for('static', filename='images/menu_icon.png') }}" alt="All Menu" class="btn-icon"> ALL_Menu
@@ -316,7 +320,7 @@
     </div>
                                                                             
     <!-- SEARCH BAR -->
-    <div id="searchContainer" class="search-container mt-3">
+<div id="searchContainer" class="search-container mt-3">
         <div class="input-group">
             <input type="text" id="searchInput" placeholder="Search for something sweet on your mind" class="form-control">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -324,7 +328,7 @@
     </div>
   
      <!-- Product Display -->
-    <div class="product-display">
+<div class="product-display">
     {% for item in products %}
         <div class="product-card"
             data-name="{{ item['good_name'] }}"
@@ -345,7 +349,7 @@
     </div>
 
     <!-- PRODUCT DETAIL MODAL -->
-    <div id="productModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+<div id="productModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); justify-content:center; align-items:center;">
         <div class="modal-content" style="background:white; border-radius:10px; max-width:400px; width:90%; padding:20px; position:relative; display:flex; flex-direction:column; gap:10px;">
             
             <!-- CLOSE BUTTON -->
@@ -387,12 +391,12 @@
     </div>
 
     <!-- LEFT FLOATING TOGGLE (INDEPENDENT) -->
-    <div id="trackOrderToggle" class="track-order-toggle">
+<div id="trackOrderToggle" class="track-order-toggle">
         <span class="toggle-symbol">+</span>
         <span class="toggle-text">Track orders</span>
     </div>
 
-        <div id="trackDrawer">
+<div id="trackDrawer">
             <div id="trackHandle">
                 <span id="trackSymbol">+</span>
                 <span class="track-text">Track Orders</span>
@@ -403,10 +407,10 @@
                     <!-- Orders will go here -->
                 </div>
             </div>
-        </div>
+    </div>
 
     <!-- NOTEPAD MODAL -->
-    <div id="notepadModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+<div id="notepadModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); justify-content:center; align-items:center;">
         <div style="background:white; border-radius:10px; max-width:500px; width:90%; padding:20px; position:relative; display:flex; flex-direction:column; gap:10px;">
             <span id="closeNotepad" style="position:absolute; top:10px; right:15px; font-size:20px; cursor:pointer;">&times;</span>
             <h5>Order Notes</h5>
@@ -1064,112 +1068,107 @@
         // Fetch a new order number on page load
         fetchNewOrderNumber();
 
-   const userProfileButton =
-document.getElementById('userProfileButton');
+        const userProfileButton =
+        document.getElementById('userProfileButton');
 
-const userProfileModal =
-document.getElementById('userProfileModal');
+        const userProfileModal =
+        document.getElementById('userProfileModal');
 
-const closeUserProfileModal =
-document.getElementById('closeUserProfileModal');
+        const closeUserProfileModal =
+        document.getElementById('closeUserProfileModal');
 
+        // LOAD USER DATA
 
-// LOAD USER DATA
+        async function loadUserProfile(){
 
-async function loadUserProfile(){
+            try{
 
-    try{
+                const response =
+                await fetch('/get_USER_DATA');
 
-        const response =
-        await fetch('/get_USER_DATA');
+                const user =
+                await response.json();
 
-        const user =
-        await response.json();
+                document.getElementById(
+                    'personal_name'
+                ).textContent =
+                user.personal_name || '';
 
-        document.getElementById(
-            'personal_name'
-        ).textContent =
-        user.personal_name || '';
+                document.getElementById(
+                    'user_password'
+                ).textContent =
+                '********';
 
-        document.getElementById(
-            'user_password'
-        ).textContent =
-        '********';
+                document.getElementById(
+                    'job_desc'
+                ).textContent =
+                user.job_desc || '';
 
-        document.getElementById(
-            'job_desc'
-        ).textContent =
-        user.job_desc || '';
+                document.getElementById(
+                    'group_id'
+                ).textContent =
 
-        document.getElementById(
-            'group_id'
-        ).textContent =
+                `${user.user_groups_character_id || ''}
+                / ${user.USER_GROUPS || ''}`;
 
-        `${user.user_groups_character_id || ''}
-         / ${user.USER_GROUPS || ''}`;
+                document.getElementById(
+                    'created_at'
+                ).textContent =
+                user.created_at || '';
 
-        document.getElementById(
-            'created_at'
-        ).textContent =
-        user.created_at || '';
+                document.getElementById(
+                    'expires_at'
+                ).textContent =
+                user.expires_at || '';
 
-        document.getElementById(
-            'expires_at'
-        ).textContent =
-        user.expires_at || '';
+            }catch(error){
 
-    }catch(error){
+                console.error(
+                    'FAILED TO LOAD USER DATA:',
+                    error
+                );
+            }
+        }
 
-        console.error(
-            'FAILED TO LOAD USER DATA:',
-            error
-        );
-    }
-}
+        // OPEN MODAL
+        userProfileButton.addEventListener(
+        'click',
 
+        async function(e){
 
-// OPEN MODAL
+            e.preventDefault();
 
-userProfileButton.addEventListener(
-'click',
+            userProfileModal.style.display = 'flex';
 
-async function(e){
+            await loadUserProfile();
 
-    e.preventDefault();
+        });
 
-    userProfileModal.style.display = 'flex';
+        // CLOSE BUTTON
 
-    await loadUserProfile();
+        closeUserProfileModal.addEventListener(
+        'click',
 
-});
+        function(){
 
+            userProfileModal.style.display = 'none';
 
-// CLOSE BUTTON
+        });
 
-closeUserProfileModal.addEventListener(
-'click',
+        // OUTSIDE CLICK
 
-function(){
+        userProfileModal.addEventListener(
+    'click',
 
-    userProfileModal.style.display = 'none';
+    function(e){
 
-});
+        if(e.target === userProfileModal){
 
+            userProfileModal.style.display = 'none';
+        }
+    });
 
-// OUTSIDE CLICK
+        </script>
 
-userProfileModal.addEventListener(
-'click',
-
-function(e){
-
-    if(e.target === userProfileModal){
-
-        userProfileModal.style.display = 'none';
-    }
-});
-
-    </script>
-
-</body>
+    </body>
 </html>
