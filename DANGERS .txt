@@ -1,0 +1,93 @@
+
+dashboard 
+
+ <> 1. id="sidebar" class="sidebar"</> 
+
+ <> 2.id="orderContainer" class="order-container"</> 
+
+ <> 3.id="userProfileModal" </> 
+
+ <> 4. class="top-bar d-flex align-items-center" </> 
+ 
+ <> 5. id="buttonsContainer" class="buttons-container" </> 
+
+<> 6 . id="searchContainer" class="search-container mt-3 </> 
+
+<> 7.  class="product-display" </> 
+
+<> 8. id="sidebar" </> 
+
+<> 9. id="sidebar" </> 
+
+<> 1. id="sidebar" </> 
+
+<> 1. id="sidebar" </> 
+
+<> 1. id="sidebar" </> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
