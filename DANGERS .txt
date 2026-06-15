@@ -1,5 +1,7 @@
+ Dashbourd.Html  contents 
 
-dashboard 
+templates\dashboard.html
+html side only 
 
  <> 1. id="sidebar" class="sidebar"</> 
 
@@ -15,74 +17,467 @@ dashboard
 
 <> 7.  class="product-display" </> 
 
-<> 8. id="sidebar" </> 
+<> 8.  id="productModal" class="modal" </> 
 
-<> 9. id="sidebar" </> 
+<> 9.  id="trackOrderToggle" class="track-order-toggle" </> 
 
-<> 1. id="sidebar" </> 
+<> 10.id="trackDrawer" </> 
 
-<> 1. id="sidebar" </> 
-
-<> 1. id="sidebar" </> 
+<> 11. id="notepadModal" </> 
 
 
 
 
+<> 1. id="sidebar" class="sidebar" </>
 
+{
+JS FUNCTIONS / EVENTS:
 
+* const sidebar = document.getElementById('sidebar')
 
+* menuToggle.addEventListener('click', function() {...})
 
+* sidebar.classList.toggle('active')
 
+* sidebar.classList.contains('active')
 
+* sidebar.addEventListener('click', function () {...})
 
+* sidebar.classList.remove('active')
 
+* shiftUI(sidebar.classList.contains('active'), false)
 
+* shiftUI(false, false)
 
+* trackHandle.classList.add('sidebar-open')
 
+* trackHandle.classList.remove('sidebar-open')
 
+FLASK ROUTES:
 
+* dashboard
+* activity_billing_queue
+* audit_logs
+* product_inventory
+* admin_employee
+* /logout
+  }
 
+---
 
+<> 2. id="orderContainer" class="order-container" </>
 
+{
+JS FUNCTIONS / EVENTS:
 
+* const orderContainer = document.getElementById('orderContainer')
 
+* orderToggle.addEventListener('click', ...)
 
+* orderContainer.classList.add('active')
 
+* orderContainer.classList.remove('active')
 
+* orderToggle.textContent = "Open Order"
 
+* orderToggle.textContent = "Close Order"
 
+* shiftUI(false, true)
 
+* shiftUI(false, false)
 
+* orderItems.innerHTML = ""
 
+* tempOrderItems = []
 
+* document.querySelector('.subtotal-amount').textContent = '$0.00'
 
+* fetchNewOrderNumber()
 
+* placeOrderBtn.addEventListener('click', ...)
 
+* updateSubtotal()
 
+* updateTaxDisplay()
 
+* updateTotal()
 
+* dropdown system
 
+* customerName editing
 
+* orderNumber editing
 
+* promoBtn discount system
 
+* tempOrderItems usage
 
+FLASK ROUTES:
 
+* /get_next_order_number
+* /get_new_order_number
+* /place_order_table
+  }
 
+---
 
+<> 3. id="userProfileModal" </>
 
+{
+JS FUNCTIONS / EVENTS:
 
+* const userProfileModal =
+  document.getElementById('userProfileModal')
 
+* loadUserProfile()
 
+* fetch('/get_USER_DATA')
 
+* userProfileButton.addEventListener('click', ...)
 
+* userProfileModal.style.display = 'flex'
 
+* closeUserProfileModal.addEventListener('click', ...)
 
+* userProfileModal.style.display = 'none'
 
+* userProfileModal.addEventListener('click', ...)
 
+* if(e.target === userProfileModal)
 
+FLASK ROUTES:
 
+* /get_USER_DATA
+  }
 
+---
 
+<> 4. class="top-bar d-flex align-items-center" </>
+
+{
+JS FUNCTIONS / EVENTS:
+
+* updateDateTime()
+
+* setInterval(updateDateTime,1000)
+
+* document.getElementById('dateText')
+
+* document.getElementById('timeText')
+
+* const orderToggle =
+  document.getElementById('orderToggle')
+
+* const menuToggle =
+  document.getElementById('menuToggle')
+
+* topBarItems.forEach(...)
+
+* shiftUI()
+
+FLASK ROUTES:
+
+* NONE
+  }
+
+---
+
+<> 5. id="buttonsContainer" class="buttons-container" </>
+
+{
+JS FUNCTIONS / EVENTS:
+
+* const buttonsContainer =
+  document.getElementById('buttonsContainer')
+
+* shiftUI()
+
+* fetch('/get_product_categories')
+
+* categories.forEach(...)
+
+* document.createElement('button')
+
+* btn.dataset.categoryNumber
+
+* btn.dataset.categoryName
+
+* buttonsContainer.appendChild(btn)
+
+* btn.addEventListener('click', ...)
+
+* buttonsContainer.addEventListener('click', ...)
+
+* category filtering system
+
+FLASK ROUTES:
+
+* /get_product_categories
+  }
+
+---
+
+<> 6. id="searchContainer" class="search-container mt-3" </>
+
+{
+JS FUNCTIONS / EVENTS:
+
+* const searchContainer =
+  document.getElementById('searchContainer')
+
+* shiftUI()
+
+* searchContainer.classList.add('shifted-left')
+
+* searchContainer.classList.remove('shifted-left')
+
+* searchContainer.classList.add('shifted-right')
+
+* searchContainer.classList.remove('shifted-right')
+
+FLASK ROUTES:
+
+* NONE
+
+NOTES:
+
+* Search UI exists
+
+* searchInput exists
+
+* No search JavaScript implemented
+  }
+
+---
+
+<> 7. class="product-display" </>
+
+{
+JS FUNCTIONS / EVENTS:
+
+* const productDisplay =
+  document.querySelector('.product-display')
+
+* shiftUI()
+
+* productDisplay.classList.add('shifted-right')
+
+* productDisplay.classList.remove('shifted-right')
+
+* const productCards =
+  document.querySelectorAll('.product-card')
+
+* productCards.forEach(card => ...)
+
+* card.addEventListener('click', ...)
+
+* modalImage.src =
+  card.querySelector('img').src
+
+* modalName.textContent =
+  card.dataset.name
+
+* modalDescription.textContent =
+  card.dataset.description
+
+* modalPrice.textContent =
+  card.dataset.price
+
+* modalCategory.textContent =
+  card.dataset.category
+
+* selectedProduct object creation
+
+* category filtering system
+
+* buttonsContainer.addEventListener('click', ...)
+
+* card.style.display = 'block'
+
+* card.style.display = 'none'
+
+FLASK ROUTES:
+
+* NONE
+
+DATA SOURCE:
+
+* products
+
+* product_category_map
+  }
+
+---
+
+<> 8. id="productModal" class="modal" </>
+
+{
+JS FUNCTIONS / EVENTS:
+
+* const productModal =
+  document.getElementById('productModal')
+
+* productModal.style.display = 'flex'
+
+* productModal.style.display = 'none'
+
+* closeModal.addEventListener('click', ...)
+
+* increaseQty.addEventListener('click', ...)
+
+* decreaseQty.addEventListener('click', ...)
+
+* qtyCounter.textContent
+
+* currentQty++
+
+* currentQty--
+
+* selectBtn.addEventListener('click', ...)
+
+* orderDetails.value
+
+* selectedProduct
+
+* itemRow creation
+
+* orderItems.appendChild(itemRow)
+
+* tempOrderItems.push(...)
+
+* updateSubtotal()
+
+* updateTaxDisplay()
+
+* updateTotal()
+
+FLASK ROUTES:
+
+* NONE
+  }
+
+---
+
+<> 9. id="trackOrderToggle" class="track-order-toggle" </>
+
+{
+JS FUNCTIONS / EVENTS:
+
+* const trackOrderToggle NOT FOUND
+
+* No addEventListener attached
+
+* No click event attached
+
+* No function references attached
+
+FLASK ROUTES:
+
+* NONE
+
+NOTES:
+
+* HTML element exists
+
+* No JavaScript found in supplied script
+  }
+
+---
+
+<> 10. id="trackDrawer" </>
+
+{
+JS FUNCTIONS / EVENTS:
+
+* const trackOrdersContainer =
+  document.querySelector('#trackDrawerContent .track-scroll')
+
+* const trackHandle =
+  document.getElementById('trackHandle')
+
+* trackHandle.classList.add('sidebar-open')
+
+* trackHandle.classList.remove('sidebar-open')
+
+FLASK ROUTES:
+
+* NONE
+
+RELATED HTML:
+
+* trackHandle
+
+* trackDrawerContent
+
+* trackSymbol
+
+* track-scroll
+
+NOTES:
+
+* Drawer structure exists
+
+* Tracking system implementation not present in supplied script
+
+* No fetch call found
+
+* No population logic found
+  }
+
+---
+
+<> 11. id="notepadModal" </>
+
+{
+JS FUNCTIONS / EVENTS:
+
+* const notepadModal =
+  document.getElementById('notepadModal')
+
+* notepadButton.addEventListener('click', ...)
+
+* allNotesContainer.innerHTML = ''
+
+* tempOrderItems.forEach(...)
+
+* document.createElement('textarea')
+
+* textarea.dataset.index
+
+* notepadModal.style.display = 'flex'
+
+* closeNotepad.addEventListener('click', ...)
+
+* notepadModal.style.display = 'none'
+
+* saveNotes.addEventListener('click', ...)
+
+* allNotesContainer.querySelectorAll('textarea')
+
+* tempOrderItems[idx].notes = newNotes
+
+* itemRow.querySelector('.item-notes')
+
+* notesDiv.textContent
+
+* notesDiv.remove()
+
+* document.createElement('div')
+
+FLASK ROUTES:
+
+* NONE
+
+DEPENDENCIES:
+
+* tempOrderItems
+
+* orderItems
+
+* itemRow
+
+* notes system
+  }
 
 
 
