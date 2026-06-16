@@ -1,3 +1,7 @@
+══════════════════════════════════════════════════════════════
+Dashboard.html Contents
+══════════════════════════════════════════════════════════════
+
  Dashbourd.Html  contents 
 
 templates\dashboard.html
@@ -478,6 +482,107 @@ DEPENDENCIES:
 
 * notes system
   }
+
+
+
+══════════════════════════════════════════════════════════════
+Activity_Billing_Queue.html Contents
+══════════════════════════════════════════════════════════════
+Activity_Billing_Queue.html Contents
+
+templates\activity_billing_queue.html
+
+html side only
+
+<> 1. id="sidebar" class="sidebar" </>
+
+<> 2. id="orderContainer" class="order-container" </>
+
+<> 3. class="top-bar d-flex align-items-center" </>
+
+<> 4. id="activityMain" </>
+
+<> 5. id="search_activity" </>
+
+<> 6. class="vertical-container" </>
+
+<> 7. class="activity-display-screen" </>
+
+<> 8. id="orderCardsContent" class="order-cards-grid" </>
+
+<> 9. id="order-rectangle-screen" class="rectangle-cards-wrapper" </>
+```
+
+
+══════════════════════════════════════════════════════════════
+Activity_Tables.html Contents
+══════════════════════════════════════════════════════════════
+
+
+Activity_Tables.html Contents
+
+templates\activity_Tables.html
+
+html side only
+
+<> 1. id="sidebar" class="sidebar" </>
+
+<> 2. id="orderContainer" class="order-container" </>
+
+<> 3. id="orderDisplayScreen" class="order-display-screen" </>
+
+<> 4. class="top-bar d-flex align-items-center" </>
+
+<> 5. id="menuToggle" class="menu-icon" </>
+
+<> 6. id="orderToggle" class="open-order top-bar-item" </>
+
+<> 7. id="dateText" </>
+
+<> 8. id="activityMain" </>
+
+<> 9. class="container-fluid mt-3" </>
+
+<> 10. class="vertical-container" </>
+
+<> 11. class="pill-btn" </>
+
+<> 12. id="pencilToggle" </>
+
+<> 13. class="table-display" </>
+
+<> 14. class="floor-section" </>
+
+<> 15. class="capacity-group" </>
+
+<> 16. class="floor-group d-flex flex-wrap gap-3" </>
+
+<> 17. class="table-card" </>
+
+<> 18. class="table-info" </>
+
+<> 19. class="reservation-form" </>
+
+<> 20. class="table-status-legend" </>
+
+<> 21. class="legend-items" </>
+
+<> 22. class="legend-item" </>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
