@@ -1,0 +1,71 @@
+══════════════════════════════════════════════════════════════
+Dashboard.html Contents
+══════════════════════════════════════════════════════════════
+
+ Dashbourd.Html  contents 
+
+templates\dashboard.html
+html side only 
+
+ <> 1. id="sidebar" class="sidebar"</> 
+
+ <> 2.id="orderContainer" class="order-container"</> 
+
+ <> 3.id="userProfileModal" </> 
+
+ <> 4. class="top-bar d-flex align-items-center" </> 
+ 
+ <> 5. id="buttonsContainer" class="buttons-container" </> 
+
+<> 6 . id="searchContainer" class="search-container mt-3 </> 
+
+<> 7.  class="product-display" </> 
+
+<> 8.  id="productModal" class="modal" </> 
+
+<> 9.  id="trackOrderToggle" class="track-order-toggle" </> 
+
+<> 10.id="trackDrawer" </> 
+
+<> 11. id="notepadModal" </> 
+
+
+
+
+the track_drawer 
+<> 9.  id="trackOrderToggle" class="track-order-toggle" </> 
+
+<> 10.id="trackDrawer" </> 
+{ 
+i.   Its a pull up push down horizontal list                                                                              }
+ii.  It shows  rectanguler small cards 
+iii. Cards displayed horizantally
+iv.  the drawer has horzontal scrolable allows  user to see all the cards 
+
+v. data to be used  (
+  
+order_ID .orders_improved_table 
+
+customer_name .customer_order {for now as a quick definition =Cus_order}
+
+Table_db_id . customer_order 
+
+order_status .order_status
+
+order_categories_name.order_categories
+
+Table_number.tables {for now as a quick definition =TNUM}
+
+
+)
+
+
+
+v.  design below for each order in
++--------------------------------
+| Cus_order 
+|
+|Table no:
+|
+|
+
